@@ -28,9 +28,9 @@ num_epochs = args.num_epochs
 batch_size = args.batch_size
 #======================================
 print("="*50)
-print("[INFO CUDA is Available: ",torch.cuda.is_available())
+print("[INFO CUDA is Available: ", torch.cuda.is_available())
 print("[INFO] Device: ", device)
-print("[INFO] Model ID: ", args.model_id)
+print("[INFO] Model ID: ", model_name)
 print("[INFO] Learning Rate: ", lr)
 print("[INFO] Number of Epochs: ", num_epochs)
 print("[INFO] Batch Size: ", batch_size)
