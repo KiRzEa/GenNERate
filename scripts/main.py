@@ -58,8 +58,11 @@ base_model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
 model = get_peft_model(base_model, peft_config)
 print_trainable_parameters(model)
 
-max_output_length = max([len(tokenizer(review)["input_ids"]) for review in dataset['train']["label"]])
-max_input_length = max([len(tokenizer(review)["input_ids"]) for review in dataset['train']["text"]])
+output_length = [len(tokenizer(review)["input_ids"]) for review in dataset['train']["label"]]
+input_length = [len(tokenizer(review)["input_ids"]) for review in dataset['train']["text"]]
+max_output_length = max(output_length)
+max_input_length = max(input_length)
+max_length = max([inp + out for inp, out in zip(output_length, input_length)])
 
 def preprocess_function(examples):
     batch_size = len(examples["text"])
