@@ -11,7 +11,7 @@ def read_data(path):
     df['labels'] = df.apply(lambda x: '\n'.join(x['raw_labels']), axis=1)
     df['labels'] = df['labels'].apply(lambda x: 'None' if x == '' else x)
     df['sentence'] = df['words'].apply(lambda x: ' '.join(x))
-    return df[['words', 'tags', 'labels', 'raw_labels']]
+    return df[['words', 'tags', 'sentence', 'labels', 'raw_labels']]
 
 def construct_prompt(df):
     output_text = df['labels'].tolist()
