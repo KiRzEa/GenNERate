@@ -8,7 +8,8 @@ def read_data(path):
     df['labels'] = df.apply(lambda x: '\n'.join([f"{entity_word}::{entity_type}" for entity_word, entity_type in zip(x['entity_words'], x['entity_types'])]),
                             axis=1)
     df['labels'] = df['labels'].apply(lambda x: 'None' if x == '' else x)
-    return df[['id', 'domain', 'sentence', 'have_ner', 'labels']]
+    df['sentence'] = df['words'].apply(lambda x: ' '.join(x))
+    return df[['words', 'tags', 'labels']]
 
 def construct_prompt(df):
     output_text = df['labels'].tolist()
