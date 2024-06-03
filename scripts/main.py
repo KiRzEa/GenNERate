@@ -17,6 +17,7 @@ parser.add_argument("--lr", type=float, default=2e-4)
 parser.add_argument("--num_epochs", type=int, default=10)
 parser.add_argument("--batch_size", type=int, default=16)
 
+args = parser.parse_args()
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
