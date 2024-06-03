@@ -7,7 +7,7 @@ def read_data(path):
     # df = df[df['have_ner'] != 0]
     df['labels'] = df.apply(lambda x: '\n'.join([f"{entity_word}::{entity_type}" for entity_word, entity_type in zip(x['entity_words'], x['entity_types'])]),
                             axis=1)
-    df['labels'] = df.apply(lambda x: 'None' if x == '' else x)
+    df['labels'] = df.apply(lambda x: 'None' if x == '' else x, axis=1)
     return df[['id', 'domain', 'sentence', 'have_ner', 'labels']]
 
 def construct_prompt(df):
