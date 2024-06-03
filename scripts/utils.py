@@ -5,11 +5,13 @@ from prompt import PROMPT
 def read_data(path):
     df = pd.read_json(path, lines=True)
     # df = df[df['have_ner'] != 0]
-    df['labels'] = df.apply(lambda x: '\n'.join([f"{entity_word}::{entity_type}" for entity_word, entity_type in zip(x['entity_words'], x['entity_types'])]),
-                            axis=1)
+    # df['labels'] = df.apply(lambda x: '\n'.join([f"{entity_word}::{entity_type}" for entity_word, entity_type in zip(x['entity_words'], x['entity_types'])]),
+    #                         axis=1)
+    df['raw_labels'] = df.apply(lambda x: extract_aspect(x['words'], x['tags']), axis=1)
+    df['labels'] = df.apply(lambda x: '\n'.join(x['raw_labels']), axis=1)
     df['labels'] = df['labels'].apply(lambda x: 'None' if x == '' else x)
     df['sentence'] = df['words'].apply(lambda x: ' '.join(x))
-    return df[['words', 'tags', 'labels']]
+    return df[['words', 'tags', 'labels', 'raw_labels']]
 
 def construct_prompt(df):
     output_text = df['labels'].tolist()
