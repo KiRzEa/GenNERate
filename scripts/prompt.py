@@ -16,6 +16,10 @@ Entities with label:
 Thái Lan::LOCATION_outer
 Yingluck::PERSON_outer
 
+Input sentence: Nỗi đau của người bệnh khi bị tiêm, kéo dài vài giây, vài phút, cùng lắm có thể đến vài ngày.
+Entities with label:
+None
+
 ##Model Response
 Input sentence: {}
 Entities with label:
