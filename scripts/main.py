@@ -149,6 +149,10 @@ def get_prediction(example):
     label = tokenizer.batch_decode(preds, skip_special_tokens=True)
     return label
 
+
+input_test, output_test = dataset['test']['text'], dataset['test']['label']
+input_dev, output_dev = dataset['dev']['text'], dataset['dev']['label']
+
 model.eval()
 start_time= time.time() # set the time at which inference started
 
@@ -167,4 +171,7 @@ print("Inference time (seconds): ", inference_time)
 
 df = pd.DataFrame(list(zip(input_test, output_test, test_pred)),
                columns =['text','gold', 'pred'])
-df.to_csv(model_name.replace("/", "_") + ".csv",index=False)
+df.to_csv(model_name.replace("/", "_") + "_test.csv",index=False)
+
+pd.DataFrame(list(zip(input_dev, output_dev, dev_pred)),
+               columns =['text','gold', 'pred']).to_csv(model_name.replace("/", "_") + "_dev.csv",index=False)
