@@ -169,7 +169,7 @@ stop_time=time.time()
 inference_time = stop_time - start_time
 print("Inference time (seconds): ", inference_time)
 
-print(evaluate(test_pred, output_test))
+print(evaluate(test_pred, output_test, model_name))
 
 df = pd.DataFrame(list(zip(input_test, output_test, test_pred)),
                columns =['text','gold', 'pred'])

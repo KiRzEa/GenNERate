@@ -71,7 +71,7 @@ def print_trainable_parameters(model):
 def get_labels():
     return ['AGE', 'DATE', 'GENDER', 'JOB', 'LOCATION', 'NAME', 'ORGANIZATION', 'PATIENT_ID', 'SYMPTOM_AND_DISEASE', 'TRANSPORTATION']
 
-def evaluate(preds, golds, output_file="results.txt"):
+def evaluate(preds, golds, model_name, output_file="results.txt"):
     tp = 0.
     fp = 0.
     fn = 0.
