@@ -9,7 +9,7 @@ def read_data(path):
     #                         axis=1)
     df['raw_labels'] = df.apply(lambda x: extract_aspect(x['words'], x['tags']), axis=1)
     df['labels'] = df.apply(lambda x: '\n'.join(x['raw_labels']), axis=1)
-    df['labels'] = df['labels'].apply(lambda x: 'None' if x == '' else x)
+    df['labels'] = df['labels'].apply(lambda x: 'Nan' if x == '' else x)
     df['sentence'] = df['words'].apply(lambda x: ' '.join(x))
     return df[['words', 'tags', 'sentence', 'labels', 'raw_labels']]
 
@@ -43,13 +43,11 @@ def extract_aspect(tokens, ner_tags):
 
     return entities
 
-def create_dataset(data_dir):
-    train = read_data(f'{data_dir}/train_word.json')
-    dev = read_data(f'{data_dir}/dev_word.json')
-    test = read_data(f'{data_dir}/test_word.json')
+def create_dataset(data_dir, level):
+    train = read_data(f'{data_dir}/{level}/train_{level}.json')
+    test = read_data(f'{data_dir}/{level}/test_{level}.json')
     dataset = DatasetDict({
         'train': Dataset.from_pandas(construct_prompt(train)),
-        'dev': Dataset.from_pandas(construct_prompt(dev)),
         'test': Dataset.from_pandas(construct_prompt(test))
     })
     
@@ -78,8 +76,12 @@ def evaluate(preds, golds, output_file="results.txt"):
     fp = 0.
     fn = 0.
     for pred, gold in zip(preds, golds):
-        pred = pred[0].split('\n')
-        gold = gold[0].split('\n')
+        pred = pred.split('\n')
+        gold = gold.split('\n')
+        if pred[0] == 'Nan':
+            pred = []
+        if gold[0] == 'Nan':
+            gold = []
         for entity in gold:
             if entity in pred:
                 tp += 1

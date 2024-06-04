@@ -17,6 +17,7 @@ parser.add_argument("--lr", type=float, default=2e-4)
 parser.add_argument("--num_epochs", type=int, default=10)
 parser.add_argument("--batch_size", type=int, default=16)
 parser.add_argument("--data_dir", type=str, default="../data/sentence")
+parser.add_argument("--syllable", action='store_true')
 
 args = parser.parse_args()
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
@@ -51,7 +52,7 @@ peft_config = LoraConfig(
         ],
 )
 
-dataset = create_dataset(args.data_dir)
+dataset = create_dataset(args.data_dir, 'syllable' if args.syllable else 'word')
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 base_model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
 
@@ -106,6 +107,9 @@ processed_datasets = dataset.map(
 train_dataloader = DataLoader(
     processed_datasets['train'], shuffle=True, collate_fn=default_data_collator, batch_size=batch_size, pin_memory=True
 )
+test_dataloader = DataLoader(
+    processed_datasets['test'], shuffle=True, collate_fn=default_data_collator, batch_size=batch_size, pin_memory=True
+)
 
 # optimizer and lr scheduler
 optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
@@ -151,27 +155,21 @@ def get_prediction(example):
 
 
 input_test, output_test = dataset['test']['text'], dataset['test']['label']
-input_dev, output_dev = dataset['dev']['text'], dataset['dev']['label']
 
 model.eval()
 start_time= time.time() # set the time at which inference started
 
 test_pred = []
-dev_pred = []
 for text in tqdm(input_test):
     pred = get_prediction(text)
     test_pred.extend(pred)
-for text in tqdm(input_dev):
-    pred = get_prediction(text)
-    dev_pred.append(pred)
 
 stop_time=time.time()
 inference_time = stop_time - start_time
 print("Inference time (seconds): ", inference_time)
 
+print(evaluate(test_pred, output_test))
+
 df = pd.DataFrame(list(zip(input_test, output_test, test_pred)),
                columns =['text','gold', 'pred'])
 df.to_csv(model_name.replace("/", "_") + "_test.csv",index=False)
-
-pd.DataFrame(list(zip(input_dev, output_dev, dev_pred)),
-               columns =['text','gold', 'pred']).to_csv(model_name.replace("/", "_") + "_dev.csv",index=False)
