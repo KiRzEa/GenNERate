@@ -160,9 +160,10 @@ model.eval()
 start_time= time.time() # set the time at which inference started
 
 test_pred = []
-for text in tqdm(input_test):
-    pred = get_prediction(text)
-    test_pred.extend(pred)
+for i in range(0, len(input_test), batch_size):
+    batch_text = input_test[i:i+batch_size]
+    batch_pred = get_prediction_batch(batch_text)
+    test_pred.extend(batch_pred)
 
 stop_time=time.time()
 inference_time = stop_time - start_time
