@@ -11,9 +11,6 @@ from peft import LoraConfig, get_peft_model, TaskType
 from tqdm import tqdm
 from utils import *
 
-from huggingface_hub import login
-login(token="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",add_to_git_credential=True)
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_name", type=str, default="bigscience/bloom-560m")
 parser.add_argument("--lr", type=float, default=2e-4)
