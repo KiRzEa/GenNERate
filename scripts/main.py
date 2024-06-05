@@ -53,8 +53,8 @@ peft_config = LoraConfig(
 )
 
 dataset = create_dataset(args.data_dir, 'syllable' if args.syllable else 'word')
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-base_model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
+tokenizer = AutoTokenizer.from_pretrained(model_name, token='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')
+base_model = AutoModelForCausalLM.from_pretrained(model_name, token='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').to(device)
 
 model = get_peft_model(base_model, peft_config)
 print_trainable_parameters(model)
