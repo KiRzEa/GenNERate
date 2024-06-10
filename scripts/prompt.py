@@ -43,7 +43,7 @@ You are trained to identify people, organizations, locations, dates, and other r
 
 List of named entities found in the sentence, categorized according to the definitions above. \
 Each entity should be tagged with its corresponding category (e.g., PERSON_NAME: Nguyen Van Nam, LOCATION: Ha Noi). \
-If no named entities found, return Nan.
+If no named entities found, return Nah.
 
 **Input sentence**: {}
 **Output:**"""

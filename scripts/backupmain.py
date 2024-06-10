@@ -154,7 +154,7 @@ def get_prediction(example):
     return label
 
 
-input_test, output_test = dataset['test']['text'], dataset['test']['label']
+test_words, test_tags, input_test, output_test = dataset['test']['words'], dataset['test']['tags'], dataset['test']['text'], dataset['test']['label']
 
 model.eval()
 start_time= time.time() # set the time at which inference started
@@ -169,8 +169,8 @@ stop_time=time.time()
 inference_time = stop_time - start_time
 print("Inference time (seconds): ", inference_time)
 
-print(evaluate(test_pred, output_test, model_name))
-
-df = pd.DataFrame(list(zip(input_test, output_test, test_pred)),
-               columns =['text','gold', 'pred'])
+df = pd.DataFrame(list(zip(test_words, test_tags, input_test, output_test, test_pred)),
+               columns =['words', 'tags', 'text','gold', 'pred'])
 df.to_csv(model_name.replace("/", "_") + "_test.csv",index=False)
+
+print(evaluate(df, model_name))

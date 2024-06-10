@@ -5,3 +5,4 @@ deepspeed
 tqdm
 datasets
 peft
+seqeval
