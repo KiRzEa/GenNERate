@@ -5,6 +5,9 @@ class NEREvaluator:
         self.model_name = model_name
         self.metric = evaluate.load('seqeval')
 
+    def get_labels(self):
+        return ['AGE', 'DATE', 'GENDER', 'JOB', 'LOCATION', 'NAME', 'ORGANIZATION', 'PATIENT_ID', 'SYMPTOM_AND_DISEASE', 'TRANSPORTATION']
+
     def convert_to_bio(self, words, labels):
         """
         Convert generation-based NER output to BIO tagging format.

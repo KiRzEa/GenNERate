@@ -81,7 +81,7 @@ class MyDataProcessor(DataProcessor):
         df = pd.read_json(path, lines=True)
         df['raw_labels'] = df.apply(lambda x: self.extract_aspect(x['words'], x['tags']), axis=1)
         df['labels'] = df.apply(lambda x: '\n'.join(x['raw_labels']), axis=1)
-        df['labels'] = df['labels'].apply(lambda x: 'Nan' if x == '' else x)
+        df['labels'] = df['labels'].apply(lambda x: 'Nah' if x == '' else x)
         df['sentence'] = df['words'].apply(lambda x: ' '.join(x))
         return df[['words', 'tags', 'sentence', 'labels', 'raw_labels']]
 
