@@ -2,7 +2,7 @@ import os
 import time
 import torch
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer, AutoModelForCausalLM, default_data_collator, get_linear_schedule_with_warmup
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, default_data_collator, get_linear_schedule_with_warmup
 from peft import LoraConfig, get_peft_model, TaskType
 from tqdm import tqdm
 import pandas as pd
@@ -45,6 +45,8 @@ class NERTrainingPipeline:
         self.data_dir = args.data_dir
         self.syllable = args.syllable
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.config = AutoConfig.from_pretrained(self.model_name)
+        self.architectures = self.config.architectures[0]
         
         self.peft_config = LoraConfig(
             task_type=TaskType.CAUSAL_LM,
@@ -52,12 +54,7 @@ class NERTrainingPipeline:
             r=8,
             lora_alpha=32,
             lora_dropout=0.05,
-            target_modules=[
-                "query_key_value",
-                "dense",
-                "dense_h_to_4h",
-                "dense_4h_to_h",
-            ],
+            target_modules=self.get_target_modules()
         )
         
         self.dataset = self.create_dataset()
@@ -68,6 +65,27 @@ class NERTrainingPipeline:
         self.max_input_length, self.max_output_length, self.max_length = self.get_max_lengths()
         self.processed_datasets = self.preprocess_datasets()
         self.train_dataloader, self.test_dataloader = self.create_dataloaders()
+
+    
+    def get_target_modules(self):
+        if self.architectures == 'BloomForCausalLM':
+            target_modules = [
+                            "query_key_value",
+                            "dense",
+                            "dense_h_to_4h",
+                            "dense_4h_to_h",
+                        ]
+        elif self.architectures == 'LlamaForCausalLM':
+            target_modules=[
+                            "q_proj",
+                            "k_proj",
+                            "v_proj",
+                            "o_proj",
+                            "gate_proj",
+                            "up_proj",
+                            "down_proj",
+                        ]
+            return target_modules
 
     def create_dataset(self):
         """
@@ -254,4 +272,4 @@ class NERTrainingPipeline:
         )), columns=['words', 'tags', 'text', 'gold', 'pred'])
 
         df.to_csv(self.model_name.replace("/", "_") + "_test.csv", index=False)
-        evaluator.evaluate(df, self.model_name)
+        evaluator.evaluate(df)
