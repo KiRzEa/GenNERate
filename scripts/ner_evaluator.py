@@ -50,7 +50,7 @@ class NEREvaluator:
             print(example)
         return entities
 
-    def evaluate(self, df, output_file="results.txt"):
+    def evaluate(self, df, level, output_file="results.txt"):
         """
         Evaluate the model predictions and write the results to a file.
 
@@ -70,7 +70,8 @@ class NEREvaluator:
 
         with open(output_file, 'a') as f:
             f.write(f"\n\nExperiment Results:\n")
-            f.write(f"Model: {self.model_name}\n\n")
+            f.write(f"Model: {self.model_name}\n")
+            f.write(f"Level: {level}\n\n")
             
             for entity, scores in results.items():
                 if entity not in ['overall_precision', 'overall_recall', 'overall_f1', 'overall_accuracy']:

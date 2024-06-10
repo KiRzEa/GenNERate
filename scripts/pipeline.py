@@ -272,4 +272,4 @@ class NERTrainingPipeline:
         )), columns=['words', 'tags', 'text', 'gold', 'pred'])
 
         df.to_csv(self.model_name.replace("/", "_") + "_test.csv", index=False)
-        evaluator.evaluate(df)
+        evaluator.evaluate(df, 'syllable' if self.syllable else 'words')
