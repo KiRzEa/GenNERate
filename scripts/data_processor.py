@@ -1,5 +1,6 @@
 import pandas as pd
 from datasets import Dataset, DatasetDict
+from prompt import PROMPT
 from abc import ABC, abstractmethod
 
 class DataProcessor(ABC):
