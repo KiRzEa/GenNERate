@@ -30,6 +30,7 @@ class DataProcessor(ABC):
         assert len(tokens) == len(ner_tags)
         entities = []
         entity_tokens = []
+        entity_type = None
         for idx, (token, tag) in enumerate(zip(tokens, ner_tags)):
             if tag.startswith('B') and len(entity_tokens) == 0:
                 entity_tokens.append(token)
@@ -40,7 +41,8 @@ class DataProcessor(ABC):
                 if len(entity_tokens) > 0:
                     entities.append(' '.join(entity_tokens) + f'::{entity_type}')
                     entity_tokens = []
-
+        if len(entity_tokens) != 0:
+            entities.append(' '.join(entity_tokens) + f'::{entity_type}')
         return entities
 
     def create_dataset(self):

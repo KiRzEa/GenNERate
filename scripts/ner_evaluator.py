@@ -36,9 +36,11 @@ class NEREvaluator:
                 if entity_type not in self.get_labels():
                     continue
                 for idx in range(len(words) - len(entity_tokens) + 1):
-                    if words[idx:idx + len(entity_tokens)] == entity_tokens:
+                    if (words[idx:idx + len(entity_tokens)] == entity_tokens) and (bio_tags[idx:idx + len(entity_tokens)] == ['O'] * len(entity_tokens)):
+                        assert len(entity_tokens) == len(bio_tags[idx:idx + len(entity_tokens)])
                         bio_tags[idx:idx + len(entity_tokens)] = ["B-" + entity_type] + ["I-" + entity_type] * (len(entity_tokens) - 1)
-            except:
+            except Exception as e:
+                print(label)
                 continue
         return bio_tags
 
@@ -53,7 +55,7 @@ class NEREvaluator:
         list: List of entity labels.
         """
         entities = []
-        if example == 'Nah':
+        if example == 'Nan':
             return entities
         try:
             for label in example.split('\n'):
