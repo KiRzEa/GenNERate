@@ -42,7 +42,7 @@ You are trained to identify people, organizations, locations, dates, and other r
 * DATE: Any date that appears in the sentence.
 
 List of named entities found in the sentence, categorized according to the definitions above. \
-Each entity should be tagged with its corresponding category (e.g., PERSON_NAME: Nguyen Van Nam, LOCATION: Ha Noi). \
+Each entity should be tagged with its corresponding category (e.g., N.V.N::PERSON_NAME, Hà Nội::LOCATION). \
 If no named entities found, return Nah.
 
 **Input sentence**: {}
