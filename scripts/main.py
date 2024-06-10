@@ -40,6 +40,7 @@ class NERTrainingPipeline:
         self.base_model = AutoModelForCausalLM.from_pretrained(self.model_name, token='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').to(self.device)
         self.model = get_peft_model(self.base_model, self.peft_config)
         self.print_trainable_parameters()
+        self.max_input_length, self.max_output_length, self.max_length = self.get_max_lengths()
         self.processed_datasets = self.preprocess_datasets()
         self.train_dataloader, self.test_dataloader = self.create_dataloaders()
 
@@ -58,6 +59,14 @@ class NERTrainingPipeline:
             f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param}"
         )
 
+    def get_max_lengths(self):
+        output_length = [len(self.tokenizer(review)["input_ids"]) for review in self.dataset['train']["label"]]
+        input_length = [len(self.tokenizer(review)["input_ids"]) for review in self.dataset['train']["text"]]
+        max_output_length = max(output_length)
+        max_input_length = max(input_length)
+        max_length = max([inp + out for inp, out in zip(output_length, input_length)])
+        return max_input_length, max_output_length, max_length
+
     def preprocess_function(self, examples):
         batch_size = len(examples["text"])
         inputs = [item + " " for item in examples["text"]]
@@ -72,16 +81,15 @@ class NERTrainingPipeline:
             labels["input_ids"][i] = [-100] * len(sample_input_ids) + label_input_ids
             model_inputs["attention_mask"][i] = [1] * len(model_inputs["input_ids"][i])
 
-        max_length = max([len(inp) for inp in model_inputs["input_ids"]])
         for i in range(batch_size):
             sample_input_ids = model_inputs["input_ids"][i]
             label_input_ids = labels["input_ids"][i]
-            model_inputs["input_ids"][i] = [self.tokenizer.pad_token_id] * (max_length - len(sample_input_ids)) + sample_input_ids
-            model_inputs["attention_mask"][i] = [0] * (max_length - len(sample_input_ids)) + model_inputs["attention_mask"][i]
-            labels["input_ids"][i] = [-100] * (max_length - len(sample_input_ids)) + label_input_ids
-            model_inputs["input_ids"][i] = torch.tensor(model_inputs["input_ids"][i][:max_length])
-            model_inputs["attention_mask"][i] = torch.tensor(model_inputs["attention_mask"][i][:max_length])
-            labels["input_ids"][i] = torch.tensor(labels["input_ids"][i][:max_length])
+            model_inputs["input_ids"][i] = [self.tokenizer.pad_token_id] * (self.max_length - len(sample_input_ids)) + sample_input_ids
+            model_inputs["attention_mask"][i] = [0] * (self.max_length - len(sample_input_ids)) + model_inputs["attention_mask"][i]
+            labels["input_ids"][i] = [-100] * (self.max_length - len(sample_input_ids)) + label_input_ids
+            model_inputs["input_ids"][i] = torch.tensor(model_inputs["input_ids"][i][:self.max_length])
+            model_inputs["attention_mask"][i] = torch.tensor(model_inputs["attention_mask"][i][:self.max_length]) 
+            labels["input_ids"][i] = torch.tensor(labels["input_ids"][i][:self.max_length])
 
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
@@ -136,9 +144,9 @@ class NERTrainingPipeline:
 
     @torch.inference_mode()
     def get_prediction(self, example):
-        input_ids = self.tokenizer(example, max_length=max_input_length, return_tensors="pt", padding="max_length", truncation=True).input_ids.to(self.device)
-        outputs = self.model.generate(input_ids=input_ids, max_new_tokens=max_output_length, eos_token_id=self.tokenizer.eos_token_id)
-        preds = outputs[:, max_input_length:].detach().cpu().numpy()
+        input_ids = self.tokenizer(example, max_length=self.max_input_length, return_tensors="pt", padding="max_length", truncation=True).input_ids.to(self.device)
+        outputs = self.model.generate(input_ids=input_ids, max_new_tokens=self.max_output_length, eos_token_id=self.tokenizer.eos_token_id)
+        preds = outputs[:, self.max_input_length:].detach().cpu().numpy()
         return self.tokenizer.batch_decode(preds, skip_special_tokens=True)
 
     def evaluate(self):
