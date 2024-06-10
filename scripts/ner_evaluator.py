@@ -72,7 +72,7 @@ class NEREvaluator:
         macro_f1 = sum(f1_scores) / len(f1_scores)
 
         with open(output_file, 'a') as f:
-            f.write(f"\n\nExperiment Results:\n")
+            f.write(f"Experiment Results:\n")
             f.write(f"Model: {self.model_name}\n")
             f.write(f"Level: {level}\n\n")
             
