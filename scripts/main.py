@@ -1,5 +1,6 @@
 import argparse
 import os
+from pipeline import NERTrainingPipeline
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
