@@ -6,6 +6,15 @@ class NEREvaluator:
         self.metric = evaluate.load('seqeval')
 
     def get_labels(self):
+        """
+        Returns a list of all supported label types.
+
+        This function retrieves all the different categories (e.g., AGE, NAME)
+        that can be used to label data points within the current context.
+
+        Returns:
+            list: A list containing all supported label types as strings.
+        """
         return ['AGE', 'DATE', 'GENDER', 'JOB', 'LOCATION', 'NAME', 'ORGANIZATION', 'PATIENT_ID', 'SYMPTOM_AND_DISEASE', 'TRANSPORTATION']
 
     def convert_to_bio(self, words, labels):
