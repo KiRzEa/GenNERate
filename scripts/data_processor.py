@@ -32,16 +32,20 @@ class DataProcessor(ABC):
         entity_tokens = []
         entity_type = None
         for idx, (token, tag) in enumerate(zip(tokens, ner_tags)):
-            if tag.startswith('B') and len(entity_tokens) == 0:
-                entity_tokens.append(token)
+            if tag.startswith('B'):
+                if entity_tokens:
+                    entities.append(' '.join(entity_tokens) + f'::{entity_type}')
+                entity_tokens = [token]
                 entity_type = tag[2:]
-            elif tag.startswith('I'):
+            elif tag.startswith('I') and (entity_type == tag[2:]):
                 entity_tokens.append(token)
             else:
-                if len(entity_tokens) > 0:
+                if entity_tokens:
                     entities.append(' '.join(entity_tokens) + f'::{entity_type}')
                     entity_tokens = []
-        if len(entity_tokens) != 0:
+                    entity_type = None
+
+        if entity_tokens:
             entities.append(' '.join(entity_tokens) + f'::{entity_type}')
         return entities
 

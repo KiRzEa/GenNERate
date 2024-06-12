@@ -29,16 +29,19 @@ class NEREvaluator:
         list: List of BIO tags corresponding to the tokens.
         """
         bio_tags = ["O"] * len(words)
+        start = 0
         for label in labels:
             try:
                 entity, entity_type = label.split('::')
                 entity_tokens = entity.split()
                 if entity_type not in self.get_labels():
                     continue
-                for idx in range(len(words) - len(entity_tokens) + 1):
-                    if (words[idx:idx + len(entity_tokens)] == entity_tokens) and (bio_tags[idx:idx + len(entity_tokens)] == ['O'] * len(entity_tokens)):
+                for idx in range(start, len(words) - len(entity_tokens) + 1):
+                    if (words[idx:idx + len(entity_tokens)] == entity_tokens): #and (bio_tags[idx:idx + len(entity_tokens)] == ['O'] * len(entity_tokens)):
                         assert len(entity_tokens) == len(bio_tags[idx:idx + len(entity_tokens)])
                         bio_tags[idx:idx + len(entity_tokens)] = ["B-" + entity_type] + ["I-" + entity_type] * (len(entity_tokens) - 1)
+                        start = idx + len(entity_tokens)
+                        break
             except Exception as e:
                 print(label)
                 continue
@@ -86,7 +89,7 @@ class NEREvaluator:
             f.write(f"Experiment Results:\n")
             f.write(f"Model: {self.model_name}\n")
             f.write(f"Level: {level}\n\n")
-            
+
             for entity, scores in results.items():
                 if entity not in ['overall_precision', 'overall_recall', 'overall_f1', 'overall_accuracy']:
                     f.write(f"{entity}: F1 Score: {scores['f1']:.4f}\n")
