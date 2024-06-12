@@ -32,7 +32,7 @@ class NEREvaluator:
         start = 0
         for label in labels:
             try:
-                entity, entity_type = label.split('::')
+                entity, entity_type = label.strip().split('::')
                 entity_tokens = entity.split()
                 if entity_type not in self.get_labels():
                     continue
@@ -43,6 +43,7 @@ class NEREvaluator:
                         start = idx + len(entity_tokens)
                         break
             except Exception as e:
+                print(e)
                 print(label)
                 continue
         return bio_tags
@@ -58,16 +59,17 @@ class NEREvaluator:
         list: List of entity labels.
         """
         entities = []
+        example = example.strip()
         if example == 'Nah':
             return entities
         try:
             for label in example.split('\n'):
-                if len(entities.split('::')) == 2:
+                if len(label.split('::')) == 2:
                     entities.append(label)
                 else:
                     continue
-        except:
-            print(example)
+        except Exception as e:
+            print(e)
         return entities
 
     def evaluate(self, df, level, output_file="results.txt"):
