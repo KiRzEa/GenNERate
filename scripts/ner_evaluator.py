@@ -58,11 +58,14 @@ class NEREvaluator:
         list: List of entity labels.
         """
         entities = []
-        if example == 'Nan':
+        if example == 'Nah':
             return entities
         try:
             for label in example.split('\n'):
-                entities.append(label)
+                if len(entities.split('::')) == 2:
+                    entities.append(label)
+                else:
+                    continue
         except:
             print(example)
         return entities
