@@ -2,10 +2,10 @@ import os
 import time
 import torch
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, default_data_collator, get_linear_schedule_with_warmup, TrainingArguments
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, default_data_collator, get_linear_schedule_with_warmup, TrainingArguments, GenerationConfig
 from peft import LoraConfig, get_peft_model, TaskType
 from trl import SFTTrainer
-from trl.configuration import GenerationConfig
+# from trl.configuration import GenerationConfig
 from tqdm import tqdm
 import pandas as pd
 
