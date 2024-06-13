@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, default_data_collator, get_linear_schedule_with_warmup, TrainingArguments
 from peft import LoraConfig, get_peft_model, TaskType
 from trl import SFTTrainer
+from trl.configuration import GenerationConfig
 from tqdm import tqdm
 import pandas as pd
 
@@ -46,6 +47,7 @@ class NERTrainingPipeline:
         self.data_dir = args.data_dir
         self.syllable = args.syllable
         self.bf16 = args.bf16
+        self.fp16 = args.fp16
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.config = AutoConfig.from_pretrained(self.model_name)
         self.architectures = self.config.architectures[0]
@@ -73,7 +75,8 @@ class NERTrainingPipeline:
             warmup_ratio = 0.1,
             learning_rate=self.lr,
             report_to="all",
-            bf16=self.bf16
+            bf16=self.bf16,
+            fp16=self.fp16
         )
         
         self.dataset = self.create_dataset()
@@ -89,6 +92,11 @@ class NERTrainingPipeline:
         self.model = get_peft_model(self.base_model, self.peft_config).to(self.device)
         self.print_trainable_parameters()
         self.max_input_length, self.max_output_length, self.max_length = self.get_max_lengths()
+        self.gen_config = GenerationConfig(
+            max_length=self.max_length,  # Combined length
+            eos_token_id=self.tokenizer.eos_token_id,
+            num_beams=1,  # Set to 1 for greedy decoding
+        )
         # self.processed_datasets = self.preprocess_datasets()
         # self.train_dataloader, self.test_dataloader = self.create_dataloaders()
         self.trainer = SFTTrainer(
@@ -274,7 +282,12 @@ class NERTrainingPipeline:
             list: The list of predicted labels.
         """
         input_ids = self.tokenizer(example, max_length=self.max_input_length, return_tensors="pt", padding="max_length", truncation=True).input_ids.to(self.device)
-        outputs = self.model.generate(input_ids=input_ids, max_new_tokens=self.max_output_length, eos_token_id=self.tokenizer.eos_token_id)
+        # outputs = self.model.generate(input_ids=input_ids, max_new_tokens=self.max_output_length, eos_token_id=self.tokenizer.eos_token_id)
+        
+        outputs = self.trainer.generate(
+            input_ids=input_ids,
+            generation_config=self.gen_config
+        )
         preds = outputs[:, self.max_input_length:].detach().cpu().numpy()
         return self.tokenizer.batch_decode(preds, skip_special_tokens=True)
 
@@ -290,6 +303,7 @@ class NERTrainingPipeline:
             None
         """
         evaluator = NEREvaluator(self.model_name)
+
         self.model.eval()
 
         start_time = time.time()
