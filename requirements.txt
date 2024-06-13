@@ -1,3 +1,4 @@
+torch==1.9.0
 transformers
 accelerate
 evaluate
@@ -7,3 +8,4 @@ datasets
 peft
 seqeval
 trl
+triton==1.0.0

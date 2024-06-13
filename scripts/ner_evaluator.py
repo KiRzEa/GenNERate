@@ -104,4 +104,4 @@ class NEREvaluator:
             f.write(f"Macro F1 Score: {macro_f1:.4f}\n")
             f.write('=' * 50)
 
-        df[['words', 'tags','pred_tags','golds','preds']].to_csv(f'{self.model_name.replace('/', '-')}_{level}.csv', index=False)
+        df[['words', 'tags','pred_tags','golds','preds']].to_csv(f"{self.model_name.replace('/', '-')}_{level}.csv", index=False)
