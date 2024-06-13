@@ -72,8 +72,7 @@ class NERTrainingPipeline:
             warmup_ratio = 0.1,
             learning_rate=self.lr,
             report_to="all",
-            fp16=True,
-            fp16_opt_level="O1"
+            bf16=True
         )
         
         self.dataset = self.create_dataset()
@@ -83,7 +82,7 @@ class NERTrainingPipeline:
         self.base_model = AutoModelForCausalLM.from_pretrained(self.model_name, 
                                                                 token='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',
                                                                 device_map="auto",
-                                                                torch_dtype=torch.float16,
+                                                                torch_dtype=torch.bfloat16,
                                                                 use_cache=False,
                                                                 force_download=False)
 
