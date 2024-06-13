@@ -60,17 +60,17 @@ class NERTrainingPipeline:
 
         self.training_arguments = TrainingArguments(
             output_dir="checkpoint",
-            per_device_train_batch_size=16,
-            per_device_eval_batch_size=32,
+            per_device_train_batch_size=self.batch_size,
+            per_device_eval_batch_size=self.batch_size,
             gradient_accumulation_steps=16,
             optim="adamw_torch",
-            num_train_epochs=10,
+            num_train_epochs=self.num_epochs,
             logging_steps=30,
             eval_strategy="epoch",
             save_strategy="no",
             load_best_model_at_end=False,
             warmup_ratio = 0.1,
-            learning_rate=2e-4,
+            learning_rate=self.lr,
             report_to="all",
             fp16=True,
         )
