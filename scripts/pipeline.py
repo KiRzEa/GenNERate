@@ -307,7 +307,7 @@ class NERTrainingPipeline:
             batch_text = self.dataset['test']['text'][i:i + self.batch_size]
             batch_pred = self.get_prediction(batch_text)
             test_pred.extend(batch_pred)
-            print(test_pred[0])
+            print(test_pred[-1])
         stop_time = time.time()
         print("Inference time (seconds): ", stop_time - start_time)
 
