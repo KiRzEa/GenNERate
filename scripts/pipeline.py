@@ -97,14 +97,14 @@ class NERTrainingPipeline:
             eos_token_id=self.tokenizer.eos_token_id,
             num_beams=1,  # Set to 1 for greedy decoding
         )
-        # self.processed_datasets = self.preprocess_datasets()
+        self.processed_datasets = self.dataset.remove_columns([col for col in dataset['train'].column_names if col not in ['prompt', 'completion']])
+        print(self.processed_datasets)
         # self.train_dataloader, self.test_dataloader = self.create_dataloaders()
         self.trainer = SFTTrainer(
             model=self.model,
             train_dataset=self.dataset["train"],
-            eval_dataset=self.dataset["dev"], 
+            # eval_dataset=self.dataset["dev"], 
             peft_config=self.peft_config,
-            dataset_text_field="text",
             max_seq_length=self.max_length,
             tokenizer=self.tokenizer,
             args=self.training_arguments,

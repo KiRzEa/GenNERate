@@ -113,4 +113,4 @@ class MyDataProcessor(DataProcessor):
             input_text.append(prompt)
         
         assert len(input_text) == len(output_text)
-        return pd.DataFrame(list(zip(raw_tokens, df['tags'], input_text, output_text)), columns=['words', 'tags', 'text', 'label'])
+        return pd.DataFrame(list(zip(raw_tokens, df['tags'], input_text, output_text)), columns=['words', 'tags', 'prompt', 'completion'])
