@@ -92,7 +92,7 @@ class NERTrainingPipeline:
         self.model = get_peft_model(self.base_model, self.peft_config).to(self.device)
         self.print_trainable_parameters()
         self.max_input_length, self.max_output_length, self.max_length = self.get_max_lengths()
-        self.preprocess_datasets = self.preprocess_datasets()
+        self.processed_datasets = self.preprocess_datasets()
         # self.processed_datasets = self.dataset.remove_columns([col for col in self.dataset['train'].column_names if col not in ['prompt', 'completion']])
         print(self.processed_datasets)
         self.train_dataloader, self.test_dataloader = self.create_dataloaders()
