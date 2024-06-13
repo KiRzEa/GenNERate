@@ -4,8 +4,8 @@ import torch
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, default_data_collator, get_linear_schedule_with_warmup, TrainingArguments, GenerationConfig
 from peft import LoraConfig, get_peft_model, TaskType
+from accelerate import Accelerator
 from trl import SFTTrainer
-# from trl.configuration import GenerationConfig
 from tqdm import tqdm
 import pandas as pd
 
@@ -92,9 +92,10 @@ class NERTrainingPipeline:
         self.model = get_peft_model(self.base_model, self.peft_config).to(self.device)
         self.print_trainable_parameters()
         self.max_input_length, self.max_output_length, self.max_length = self.get_max_lengths()
-        self.processed_datasets = self.dataset.remove_columns([col for col in self.dataset['train'].column_names if col not in ['prompt', 'completion']])
+        self.preprocess_datasets = self.preprocess_datasets()
+        # self.processed_datasets = self.dataset.remove_columns([col for col in self.dataset['train'].column_names if col not in ['prompt', 'completion']])
         print(self.processed_datasets)
-        # self.train_dataloader, self.test_dataloader = self.create_dataloaders()
+        self.train_dataloader, self.test_dataloader = self.create_dataloaders()
         self.trainer = SFTTrainer(
             model=self.model,
             train_dataset=self.processed_datasets["train"],
@@ -165,57 +166,57 @@ class NERTrainingPipeline:
         max_length = max([inp + out for inp, out in zip(output_length, input_length)])
         return max_input_length, max_output_length, max_length
 
-    # def preprocess_function(self, examples):
-    #     """
-    #     Preprocess the dataset examples.
+    def preprocess_function(self, examples):
+        """
+        Preprocess the dataset examples.
 
-    #     Args:
-    #         examples (dict): A dictionary containing input and output examples.
+        Args:
+            examples (dict): A dictionary containing input and output examples.
 
-    #     Returns:
-    #         dict: Preprocessed model inputs.
-    #     """
-    #     batch_size = len(examples["text"])
-    #     inputs = [item + " " for item in examples["text"]]
-    #     targets = examples["label"]
-    #     model_inputs = self.tokenizer(inputs)
-    #     labels = self.tokenizer(targets, add_special_tokens=False)
+        Returns:
+            dict: Preprocessed model inputs.
+        """
+        batch_size = len(examples["prompt"])
+        inputs = [item + " " for item in examples["prompt"]]
+        targets = examples["completion"]
+        model_inputs = self.tokenizer(inputs)
+        labels = self.tokenizer(targets, add_special_tokens=False)
 
-    #     for i in range(batch_size):
-    #         sample_input_ids = model_inputs["input_ids"][i]
-    #         label_input_ids = labels["input_ids"][i] + [self.tokenizer.eos_token_id]
-    #         model_inputs["input_ids"][i] = sample_input_ids + label_input_ids
-    #         labels["input_ids"][i] = [-100] * len(sample_input_ids) + label_input_ids
-    #         model_inputs["attention_mask"][i] = [1] * len(model_inputs["input_ids"][i])
+        for i in range(batch_size):
+            sample_input_ids = model_inputs["input_ids"][i]
+            label_input_ids = labels["input_ids"][i] + [self.tokenizer.eos_token_id]
+            model_inputs["input_ids"][i] = sample_input_ids + label_input_ids
+            labels["input_ids"][i] = [-100] * len(sample_input_ids) + label_input_ids
+            model_inputs["attention_mask"][i] = [1] * len(model_inputs["input_ids"][i])
 
-    #     for i in range(batch_size):
-    #         sample_input_ids = model_inputs["input_ids"][i]
-    #         label_input_ids = labels["input_ids"][i]
-    #         model_inputs["input_ids"][i] = [self.tokenizer.pad_token_id] * (self.max_length - len(sample_input_ids)) + sample_input_ids
-    #         model_inputs["attention_mask"][i] = [0] * (self.max_length - len(sample_input_ids)) + model_inputs["attention_mask"][i]
-    #         labels["input_ids"][i] = [-100] * (self.max_length - len(sample_input_ids)) + label_input_ids
-    #         model_inputs["input_ids"][i] = torch.tensor(model_inputs["input_ids"][i][:self.max_length])
-    #         model_inputs["attention_mask"][i] = torch.tensor(model_inputs["attention_mask"][i][:self.max_length]) 
-    #         labels["input_ids"][i] = torch.tensor(labels["input_ids"][i][:self.max_length])
+        for i in range(batch_size):
+            sample_input_ids = model_inputs["input_ids"][i]
+            label_input_ids = labels["input_ids"][i]
+            model_inputs["input_ids"][i] = [self.tokenizer.pad_token_id] * (self.max_length - len(sample_input_ids)) + sample_input_ids
+            model_inputs["attention_mask"][i] = [0] * (self.max_length - len(sample_input_ids)) + model_inputs["attention_mask"][i]
+            labels["input_ids"][i] = [-100] * (self.max_length - len(sample_input_ids)) + label_input_ids
+            model_inputs["input_ids"][i] = torch.tensor(model_inputs["input_ids"][i][:self.max_length])
+            model_inputs["attention_mask"][i] = torch.tensor(model_inputs["attention_mask"][i][:self.max_length]) 
+            labels["input_ids"][i] = torch.tensor(labels["input_ids"][i][:self.max_length])
 
-    #     model_inputs["labels"] = labels["input_ids"]
-    #     return model_inputs
+        model_inputs["labels"] = labels["input_ids"]
+        return model_inputs
 
-    # def preprocess_datasets(self):
-    #     """
-    #     Preprocess the training and testing datasets.
+    def preprocess_datasets(self):
+        """
+        Preprocess the training and testing datasets.
 
-    #     Returns:
-    #         DatasetDict: The preprocessed datasets.
-    #     """
-    #     return self.dataset.map(
-    #         self.preprocess_function,
-    #         batched=True,
-    #         num_proc=1,
-    #         remove_columns=self.dataset["train"].column_names,
-    #         load_from_cache_file=False,
-    #         desc="Running tokenizer on dataset",
-    #     )
+        Returns:
+            DatasetDict: The preprocessed datasets.
+        """
+        return self.dataset.map(
+            self.preprocess_function,
+            batched=True,
+            num_proc=1,
+            remove_columns=self.dataset["train"].column_names,
+            load_from_cache_file=False,
+            desc="Running tokenizer on dataset",
+        )
 
     def create_dataloaders(self):
         """
@@ -236,31 +237,36 @@ class NERTrainingPipeline:
         """
         Train the model.
         """
-        # optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.lr)
-        # lr_scheduler = get_linear_schedule_with_warmup(
-        #     optimizer=optimizer,
-        #     num_warmup_steps=0,
-        #     num_training_steps=(len(self.train_dataloader) * self.num_epochs),
-        # )
+        optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.lr)
+        lr_scheduler = get_linear_schedule_with_warmup(
+            optimizer=optimizer,
+            num_warmup_steps=0,
+            num_training_steps=(len(self.train_dataloader) * self.num_epochs),
+        )
+        accelerator = Accelerator()
 
+        self.model, optimizer, self.training_dataloader, lr_scheduler = accelerator.prepare(
+            self.model, optimizer, self.training_dataloader, lr_scheduler
+        )
         start_time = time.time()
-        self.trainer.train()
-        # for epoch in range(self.num_epochs):
-        #     self.model.train()
-        #     total_loss = 0
-        #     for step, batch in enumerate(tqdm(self.train_dataloader)):
-        #         batch = {k: v.to(self.device) for k, v in batch.items()}
-        #         outputs = self.model(**batch)
-        #         loss = outputs.loss
-        #         total_loss += loss.detach().float()
-        #         loss.backward()
-        #         optimizer.step()
-        #         lr_scheduler.step()
-        #         optimizer.zero_grad()
+        # self.trainer.train()
+        for epoch in range(self.num_epochs):
+            self.model.train()
+            total_loss = 0
+            for step, batch in enumerate(tqdm(self.train_dataloader)):
+                batch = {k: v.to(self.device) for k, v in batch.items()}
+                outputs = self.model(**batch)
+                loss = outputs.loss
+                total_loss += loss.detach().float()
+                # loss.backward()
+                accelerator.backward(loss)
+                optimizer.step()
+                lr_scheduler.step()
+                optimizer.zero_grad()
 
-        #     train_epoch_loss = total_loss / len(self.train_dataloader)
-        #     train_ppl = torch.exp(train_epoch_loss)
-        #     print(f"{epoch=}: {train_ppl=} {train_epoch_loss=}")
+            train_epoch_loss = total_loss / len(self.train_dataloader)
+            train_ppl = torch.exp(train_epoch_loss)
+            print(f"{epoch=}: {train_ppl=} {train_epoch_loss=}")
 
         stop_time = time.time()
         print("Training time (seconds): ", stop_time - start_time)
