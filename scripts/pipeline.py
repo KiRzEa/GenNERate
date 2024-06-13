@@ -55,8 +55,8 @@ class NERTrainingPipeline:
         self.peft_config = LoraConfig(
             task_type=TaskType.CAUSAL_LM,
             inference_mode=False,
-            r=512,
-            lora_alpha=1024,
+            r=8,
+            lora_alpha=32,
             lora_dropout=0.05,
             target_modules=self.get_target_modules()
         )
