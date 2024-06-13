@@ -57,9 +57,11 @@ class DataProcessor(ABC):
         DatasetDict: A dictionary containing the training and testing datasets.
         """
         train = self.read_data(f'{self.data_dir}/{self.level}/train_{self.level}.json')
+        dev = self.read_data(f'{self.data_dir}/{self.level}/dev_{self.level}.json')
         test = self.read_data(f'{self.data_dir}/{self.level}/test_{self.level}.json')
         dataset = DatasetDict({
             'train': Dataset.from_pandas(self.construct_prompt(train)),
+            'dev': Dataset.from_pandas(self.construct_prompt(dev)),
             'test': Dataset.from_pandas(self.construct_prompt(test))
         })
         return dataset

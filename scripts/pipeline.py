@@ -2,8 +2,9 @@ import os
 import time
 import torch
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, default_data_collator, get_linear_schedule_with_warmup
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, default_data_collator, get_linear_schedule_with_warmup, TrainingArguments
 from peft import LoraConfig, get_peft_model, TaskType
+from trl import SFTTrainer
 from tqdm import tqdm
 import pandas as pd
 
@@ -51,20 +52,53 @@ class NERTrainingPipeline:
         self.peft_config = LoraConfig(
             task_type=TaskType.CAUSAL_LM,
             inference_mode=False,
-            r=8,
-            lora_alpha=32,
+            r=512,
+            lora_alpha=1024,
             lora_dropout=0.05,
             target_modules=self.get_target_modules()
+        )
+
+        self.training_arguments = TrainingArguments(
+            output_dir="checkpoint",
+            per_device_train_batch_size=16,
+            per_device_eval_batch_size=32,
+            gradient_accumulation_steps=16,
+            optim="adamw_torch",
+            num_train_epochs=10,
+            logging_steps=30,
+            eval_strategy="epoch",
+            save_strategy="no",
+            load_best_model_at_end=False,
+            warmup_ratio = 0.1,
+            learning_rate=2e-4,
+            report_to="all",
+            bf16=True,
         )
         
         self.dataset = self.create_dataset()
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, token='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')
-        self.base_model = AutoModelForCausalLM.from_pretrained(self.model_name, token='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').to(self.device)
+        self.base_model = AutoModelForCausalLM.from_pretrained(self.model_name, 
+                                                                token='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',
+                                                                torch_dtype=torch.bfloat16,
+                                                                use_cache=False,
+                                                                force_download=False)
+
         self.model = get_peft_model(self.base_model, self.peft_config)
         self.print_trainable_parameters()
         self.max_input_length, self.max_output_length, self.max_length = self.get_max_lengths()
-        self.processed_datasets = self.preprocess_datasets()
+        # self.processed_datasets = self.preprocess_datasets()
         self.train_dataloader, self.test_dataloader = self.create_dataloaders()
+        self.trainer = SFTTrainer(
+            model=self.model,
+            train_dataset=self.dataset["train"],
+            eval_dataset=self.dataset["dev"], 
+            peft_config=self.peft_config,
+            dataset_text_field="text",
+            max_seq_length=self.max_length,
+            tokenizer=self.tokenizer,
+            args=self.training_arguments,
+            packing=False,
+        )
 
     
     def get_target_modules(self):
@@ -196,30 +230,31 @@ class NERTrainingPipeline:
         """
         Train the model.
         """
-        optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.lr)
-        lr_scheduler = get_linear_schedule_with_warmup(
-            optimizer=optimizer,
-            num_warmup_steps=0,
-            num_training_steps=(len(self.train_dataloader) * self.num_epochs),
-        )
+        # optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.lr)
+        # lr_scheduler = get_linear_schedule_with_warmup(
+        #     optimizer=optimizer,
+        #     num_warmup_steps=0,
+        #     num_training_steps=(len(self.train_dataloader) * self.num_epochs),
+        # )
 
         start_time = time.time()
-        for epoch in range(self.num_epochs):
-            self.model.train()
-            total_loss = 0
-            for step, batch in enumerate(tqdm(self.train_dataloader)):
-                batch = {k: v.to(self.device) for k, v in batch.items()}
-                outputs = self.model(**batch)
-                loss = outputs.loss
-                total_loss += loss.detach().float()
-                loss.backward()
-                optimizer.step()
-                lr_scheduler.step()
-                optimizer.zero_grad()
+        self.trainer.train()
+        # for epoch in range(self.num_epochs):
+        #     self.model.train()
+        #     total_loss = 0
+        #     for step, batch in enumerate(tqdm(self.train_dataloader)):
+        #         batch = {k: v.to(self.device) for k, v in batch.items()}
+        #         outputs = self.model(**batch)
+        #         loss = outputs.loss
+        #         total_loss += loss.detach().float()
+        #         loss.backward()
+        #         optimizer.step()
+        #         lr_scheduler.step()
+        #         optimizer.zero_grad()
 
-            train_epoch_loss = total_loss / len(self.train_dataloader)
-            train_ppl = torch.exp(train_epoch_loss)
-            print(f"{epoch=}: {train_ppl=} {train_epoch_loss=}")
+        #     train_epoch_loss = total_loss / len(self.train_dataloader)
+        #     train_ppl = torch.exp(train_epoch_loss)
+        #     print(f"{epoch=}: {train_ppl=} {train_epoch_loss=}")
 
         stop_time = time.time()
         print("Training time (seconds): ", stop_time - start_time)
