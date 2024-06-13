@@ -1,6 +1,13 @@
 import argparse
-import os
 from pipeline import NERTrainingPipeline
+import os
+import warnings
+
+warnings.filterwarnings("ignore")
+os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "1"
+os.environ["WANDB_DISABLED"] = "true"
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
