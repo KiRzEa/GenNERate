@@ -245,8 +245,8 @@ class NERTrainingPipeline:
         )
         accelerator = Accelerator()
 
-        self.model, optimizer, self.training_dataloader, lr_scheduler = accelerator.prepare(
-            self.model, optimizer, self.training_dataloader, lr_scheduler
+        self.model, optimizer, self.train_dataloader, lr_scheduler = accelerator.prepare(
+            self.model, optimizer, self.train_dataloader, lr_scheduler
         )
         start_time = time.time()
         # self.trainer.train()
