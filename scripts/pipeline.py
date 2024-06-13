@@ -62,7 +62,7 @@ class NERTrainingPipeline:
             output_dir="checkpoint",
             per_device_train_batch_size=self.batch_size,
             per_device_eval_batch_size=self.batch_size,
-            gradient_accumulation_steps=16,
+            # gradient_accumulation_steps=16,
             optim="adamw_torch",
             num_train_epochs=self.num_epochs,
             logging_steps=30,
