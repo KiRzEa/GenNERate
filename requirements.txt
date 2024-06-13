@@ -8,4 +8,4 @@ datasets
 peft
 seqeval
 trl
-triton==1.0.0
+triton
