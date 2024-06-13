@@ -86,7 +86,7 @@ class NERTrainingPipeline:
                                                                 use_cache=False,
                                                                 force_download=False)
 
-        self.model = get_peft_model(self.base_model, self.peft_config)
+        self.model = get_peft_model(self.base_model, self.peft_config).to(self.device)
         self.print_trainable_parameters()
         self.max_input_length, self.max_output_length, self.max_length = self.get_max_lengths()
         # self.processed_datasets = self.preprocess_datasets()
@@ -309,5 +309,5 @@ class NERTrainingPipeline:
             test_pred
         )), columns=['words', 'tags', 'text', 'gold', 'pred'])
 
-        df.to_csv(self.model_name.replace("/", "_") + "_test.csv", index=False)
+        df.to_csv(self.model_name.replace("/", "-") + "_test.csv", index=False)
         evaluator.evaluate(df, 'syllable' if self.syllable else 'word')
