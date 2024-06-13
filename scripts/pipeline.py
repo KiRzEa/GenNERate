@@ -163,64 +163,64 @@ class NERTrainingPipeline:
         Returns:
             tuple: A tuple containing the maximum input length, maximum output length, and maximum combined length.
         """
-        output_length = [len(self.tokenizer(review)["input_ids"]) for review in self.dataset['train']["label"]]
-        input_length = [len(self.tokenizer(review)["input_ids"]) for review in self.dataset['train']["text"]]
+        output_length = [len(self.tokenizer(review)["input_ids"]) for review in self.dataset['train']["completion"]]
+        input_length = [len(self.tokenizer(review)["input_ids"]) for review in self.dataset['train']["prompt"]]
         max_output_length = max(output_length)
         max_input_length = max(input_length)
         max_length = max([inp + out for inp, out in zip(output_length, input_length)])
         return max_input_length, max_output_length, max_length
 
-    def preprocess_function(self, examples):
-        """
-        Preprocess the dataset examples.
+    # def preprocess_function(self, examples):
+    #     """
+    #     Preprocess the dataset examples.
 
-        Args:
-            examples (dict): A dictionary containing input and output examples.
+    #     Args:
+    #         examples (dict): A dictionary containing input and output examples.
 
-        Returns:
-            dict: Preprocessed model inputs.
-        """
-        batch_size = len(examples["text"])
-        inputs = [item + " " for item in examples["text"]]
-        targets = examples["label"]
-        model_inputs = self.tokenizer(inputs)
-        labels = self.tokenizer(targets, add_special_tokens=False)
+    #     Returns:
+    #         dict: Preprocessed model inputs.
+    #     """
+    #     batch_size = len(examples["text"])
+    #     inputs = [item + " " for item in examples["text"]]
+    #     targets = examples["label"]
+    #     model_inputs = self.tokenizer(inputs)
+    #     labels = self.tokenizer(targets, add_special_tokens=False)
 
-        for i in range(batch_size):
-            sample_input_ids = model_inputs["input_ids"][i]
-            label_input_ids = labels["input_ids"][i] + [self.tokenizer.eos_token_id]
-            model_inputs["input_ids"][i] = sample_input_ids + label_input_ids
-            labels["input_ids"][i] = [-100] * len(sample_input_ids) + label_input_ids
-            model_inputs["attention_mask"][i] = [1] * len(model_inputs["input_ids"][i])
+    #     for i in range(batch_size):
+    #         sample_input_ids = model_inputs["input_ids"][i]
+    #         label_input_ids = labels["input_ids"][i] + [self.tokenizer.eos_token_id]
+    #         model_inputs["input_ids"][i] = sample_input_ids + label_input_ids
+    #         labels["input_ids"][i] = [-100] * len(sample_input_ids) + label_input_ids
+    #         model_inputs["attention_mask"][i] = [1] * len(model_inputs["input_ids"][i])
 
-        for i in range(batch_size):
-            sample_input_ids = model_inputs["input_ids"][i]
-            label_input_ids = labels["input_ids"][i]
-            model_inputs["input_ids"][i] = [self.tokenizer.pad_token_id] * (self.max_length - len(sample_input_ids)) + sample_input_ids
-            model_inputs["attention_mask"][i] = [0] * (self.max_length - len(sample_input_ids)) + model_inputs["attention_mask"][i]
-            labels["input_ids"][i] = [-100] * (self.max_length - len(sample_input_ids)) + label_input_ids
-            model_inputs["input_ids"][i] = torch.tensor(model_inputs["input_ids"][i][:self.max_length])
-            model_inputs["attention_mask"][i] = torch.tensor(model_inputs["attention_mask"][i][:self.max_length]) 
-            labels["input_ids"][i] = torch.tensor(labels["input_ids"][i][:self.max_length])
+    #     for i in range(batch_size):
+    #         sample_input_ids = model_inputs["input_ids"][i]
+    #         label_input_ids = labels["input_ids"][i]
+    #         model_inputs["input_ids"][i] = [self.tokenizer.pad_token_id] * (self.max_length - len(sample_input_ids)) + sample_input_ids
+    #         model_inputs["attention_mask"][i] = [0] * (self.max_length - len(sample_input_ids)) + model_inputs["attention_mask"][i]
+    #         labels["input_ids"][i] = [-100] * (self.max_length - len(sample_input_ids)) + label_input_ids
+    #         model_inputs["input_ids"][i] = torch.tensor(model_inputs["input_ids"][i][:self.max_length])
+    #         model_inputs["attention_mask"][i] = torch.tensor(model_inputs["attention_mask"][i][:self.max_length]) 
+    #         labels["input_ids"][i] = torch.tensor(labels["input_ids"][i][:self.max_length])
 
-        model_inputs["labels"] = labels["input_ids"]
-        return model_inputs
+    #     model_inputs["labels"] = labels["input_ids"]
+    #     return model_inputs
 
-    def preprocess_datasets(self):
-        """
-        Preprocess the training and testing datasets.
+    # def preprocess_datasets(self):
+    #     """
+    #     Preprocess the training and testing datasets.
 
-        Returns:
-            DatasetDict: The preprocessed datasets.
-        """
-        return self.dataset.map(
-            self.preprocess_function,
-            batched=True,
-            num_proc=1,
-            remove_columns=self.dataset["train"].column_names,
-            load_from_cache_file=False,
-            desc="Running tokenizer on dataset",
-        )
+    #     Returns:
+    #         DatasetDict: The preprocessed datasets.
+    #     """
+    #     return self.dataset.map(
+    #         self.preprocess_function,
+    #         batched=True,
+    #         num_proc=1,
+    #         remove_columns=self.dataset["train"].column_names,
+    #         load_from_cache_file=False,
+    #         desc="Running tokenizer on dataset",
+    #     )
 
     def create_dataloaders(self):
         """
@@ -303,8 +303,8 @@ class NERTrainingPipeline:
 
         start_time = time.time()
         test_pred = []
-        for i in tqdm(range(0, len(self.dataset['test']['text']), self.batch_size)):
-            batch_text = self.dataset['test']['text'][i:i + self.batch_size]
+        for i in tqdm(range(0, len(self.dataset['test']['prompt']), self.batch_size)):
+            batch_text = self.dataset['test']['prompt'][i:i + self.batch_size]
             batch_pred = self.get_prediction(batch_text)
             test_pred.extend(batch_pred)
             print(test_pred[-1])
@@ -314,10 +314,10 @@ class NERTrainingPipeline:
         df = pd.DataFrame(list(zip(
             self.dataset['test']['words'],
             self.dataset['test']['tags'],
-            self.dataset['test']['text'],
-            self.dataset['test']['label'],
+            self.dataset['test']['prompt'],
+            self.dataset['test']['completion'],
             test_pred
-        )), columns=['words', 'tags', 'text', 'gold', 'pred'])
+        )), columns=['words', 'tags', 'prompt', 'gold', 'pred'])
 
         df.to_csv(self.model_name.replace("/", "-") + "_test.csv", index=False)
         evaluator.evaluate(df, 'syllable' if self.syllable else 'word')
