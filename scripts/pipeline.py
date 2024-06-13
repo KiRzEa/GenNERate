@@ -73,6 +73,7 @@ class NERTrainingPipeline:
             learning_rate=self.lr,
             report_to="all",
             fp16=True,
+            fp16_opt_level="O1"
         )
         
         self.dataset = self.create_dataset()
