@@ -72,14 +72,14 @@ class NERTrainingPipeline:
             warmup_ratio = 0.1,
             learning_rate=2e-4,
             report_to="all",
-            bf16=True,
+            fp16=True,
         )
         
         self.dataset = self.create_dataset()
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, token='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')
         self.base_model = AutoModelForCausalLM.from_pretrained(self.model_name, 
                                                                 token='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',
-                                                                torch_dtype=torch.bfloat16,
+                                                                torch_dtype=torch.float16,
                                                                 use_cache=False,
                                                                 force_download=False)
 
