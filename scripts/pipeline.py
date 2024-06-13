@@ -45,6 +45,7 @@ class NERTrainingPipeline:
         self.batch_size = args.batch_size
         self.data_dir = args.data_dir
         self.syllable = args.syllable
+        self.bf16 = args.bf16
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.config = AutoConfig.from_pretrained(self.model_name)
         self.architectures = self.config.architectures[0]
@@ -61,18 +62,18 @@ class NERTrainingPipeline:
         self.training_arguments = TrainingArguments(
             output_dir="checkpoint",
             per_device_train_batch_size=self.batch_size,
-            per_device_eval_batch_size=self.batch_size,
+            # per_device_eval_batch_size=self.batch_size,
             # gradient_accumulation_steps=16,
             optim="adamw_torch",
             num_train_epochs=self.num_epochs,
             logging_steps=256,
-            eval_strategy="epoch",
+            # eval_strategy="epoch",
             save_strategy="no",
             load_best_model_at_end=False,
             warmup_ratio = 0.1,
             learning_rate=self.lr,
             report_to="all",
-            # bf16=True
+            bf16=self.bf16
         )
         
         self.dataset = self.create_dataset()
@@ -82,7 +83,6 @@ class NERTrainingPipeline:
         self.base_model = AutoModelForCausalLM.from_pretrained(self.model_name, 
                                                                 token='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',
                                                                 device_map="auto",
-                                                                # torch_dtype=torch.bfloat16,
                                                                 use_cache=False,
                                                                 force_download=False)
 
@@ -294,7 +294,7 @@ class NERTrainingPipeline:
 
         start_time = time.time()
         test_pred = []
-        for i in range(0, len(self.dataset['test']['text']), self.batch_size):
+        for i in tqdm(range(0, len(self.dataset['test']['text']), self.batch_size)):
             batch_text = self.dataset['test']['text'][i:i + self.batch_size]
             batch_pred = self.get_prediction(batch_text)
             test_pred.extend(batch_pred)
