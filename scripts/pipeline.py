@@ -81,8 +81,8 @@ class NERTrainingPipeline:
         
         self.dataset = self.create_dataset()
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, token='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')
-        self.tokenizer.pad_token = self.tokenizer.eos_token
-        self.tokenizer.padding_side = "right"
+        # self.tokenizer.pad_token = self.tokenizer.eos_token
+        # self.tokenizer.padding_side = "right"
         self.base_model = AutoModelForCausalLM.from_pretrained(self.model_name, 
                                                                 token='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',
                                                                 device_map="auto",
