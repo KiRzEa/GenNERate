@@ -82,7 +82,7 @@ class NERTrainingPipeline:
         self.dataset = self.create_dataset()
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, token='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')
         # self.tokenizer.pad_token = self.tokenizer.eos_token
-        # self.tokenizer.padding_side = "right"
+        self.tokenizer.padding_side = "right"
         self.base_model = AutoModelForCausalLM.from_pretrained(self.model_name, 
                                                                 token='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',
                                                                 device_map="auto",
@@ -92,8 +92,8 @@ class NERTrainingPipeline:
         self.model = get_peft_model(self.base_model, self.peft_config).to(self.device)
         self.print_trainable_parameters()
         self.max_input_length, self.max_output_length, self.max_length = self.get_max_lengths()
-        self.processed_datasets = self.preprocess_datasets()
-        # self.processed_datasets = self.dataset.remove_columns([col for col in self.dataset['train'].column_names if col not in ['prompt', 'completion']])
+        # self.processed_datasets = self.preprocess_datasets()
+        self.processed_datasets = self.dataset.remove_columns([col for col in self.dataset['train'].column_names if col not in ['prompt', 'completion']])
         print(self.processed_datasets)
         self.train_dataloader, self.test_dataloader = self.create_dataloaders()
         self.trainer = SFTTrainer(
@@ -229,7 +229,7 @@ class NERTrainingPipeline:
             self.processed_datasets['train'], shuffle=True, collate_fn=default_data_collator, batch_size=self.batch_size, pin_memory=True
         )
         test_dataloader = DataLoader(
-            self.processed_datasets['test'], shuffle=True, collate_fn=default_data_collator, batch_size=self.batch_size, pin_memory=True
+            self.processed_datasets['test'], collate_fn=default_data_collator, batch_size=self.batch_size, pin_memory=True
         )
         return train_dataloader, test_dataloader
 
@@ -237,36 +237,36 @@ class NERTrainingPipeline:
         """
         Train the model.
         """
-        optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.lr)
-        lr_scheduler = get_linear_schedule_with_warmup(
-            optimizer=optimizer,
-            num_warmup_steps=0,
-            num_training_steps=(len(self.train_dataloader) * self.num_epochs),
-        )
-        accelerator = Accelerator()
+        # optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.lr)
+        # lr_scheduler = get_linear_schedule_with_warmup(
+        #     optimizer=optimizer,
+        #     num_warmup_steps=0,
+        #     num_training_steps=(len(self.train_dataloader) * self.num_epochs),
+        # )
+        # accelerator = Accelerator()
 
-        self.model, optimizer, self.train_dataloader, lr_scheduler = accelerator.prepare(
-            self.model, optimizer, self.train_dataloader, lr_scheduler
-        )
+        # self.model, optimizer, self.train_dataloader, lr_scheduler = accelerator.prepare(
+        #     self.model, optimizer, self.train_dataloader, lr_scheduler
+        # )
         start_time = time.time()
-        # self.trainer.train()
-        for epoch in range(self.num_epochs):
-            self.model.train()
-            total_loss = 0
-            for step, batch in enumerate(tqdm(self.train_dataloader)):
-                # batch = {k: v.to(self.device) for k, v in batch.items()}
-                outputs = self.model(**batch)
-                loss = outputs.loss
-                total_loss += loss.detach().float()
-                # loss.backward()
-                accelerator.backward(loss)
-                optimizer.step()
-                lr_scheduler.step()
-                optimizer.zero_grad()
+        self.trainer.train()
+        # for epoch in range(self.num_epochs):
+        #     self.model.train()
+        #     total_loss = 0
+        #     for step, batch in enumerate(tqdm(self.train_dataloader)):
+        #         # batch = {k: v.to(self.device) for k, v in batch.items()}
+        #         outputs = self.model(**batch)
+        #         loss = outputs.loss
+        #         total_loss += loss.detach().float()
+        #         # loss.backward()
+        #         accelerator.backward(loss)
+        #         optimizer.step()
+        #         lr_scheduler.step()
+        #         optimizer.zero_grad()
 
-            train_epoch_loss = total_loss / len(self.train_dataloader)
-            train_ppl = torch.exp(train_epoch_loss)
-            print(f"{epoch=}: {train_ppl=} {train_epoch_loss=}")
+        #     train_epoch_loss = total_loss / len(self.train_dataloader)
+        #     train_ppl = torch.exp(train_epoch_loss)
+        #     print(f"{epoch=}: {train_ppl=} {train_epoch_loss=}")
 
         stop_time = time.time()
         print("Training time (seconds): ", stop_time - start_time)
@@ -283,7 +283,7 @@ class NERTrainingPipeline:
             list: The list of predicted labels.
         """
         input_ids = self.tokenizer(example, max_length=self.max_input_length, return_tensors="pt", padding="max_length", truncation=True).input_ids.to(self.device)
-        outputs = self.model.generate(input_ids=input_ids, max_new_tokens=self.max_output_length, eos_token_id=self.tokenizer.eos_token_id)
+        outputs = self.trainer.model.generate(input_ids=input_ids, max_new_tokens=self.max_output_length, eos_token_id=self.tokenizer.eos_token_id)
         
         preds = outputs[:, self.max_input_length:].detach().cpu().numpy()
         return self.tokenizer.batch_decode(preds, skip_special_tokens=True)
