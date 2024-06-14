@@ -304,8 +304,8 @@ class NERTrainingPipeline:
 
         start_time = time.time()
         test_pred = []
-        for i in tqdm(range(0, len(self.dataset['test']['prompt']), self.batch_size)):
-            batch_text = self.dataset['test']['prompt'][i:i + self.batch_size]
+        for i in tqdm(range(0, len(self.dataset['test']['prompt']), self.batch_size * 2)):
+            batch_text = self.dataset['test']['prompt'][i:i + self.batch_size * 2]
             batch_pred = self.get_prediction(batch_text)
             test_pred.extend(batch_pred)
             print(test_pred[-1])
