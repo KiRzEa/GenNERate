@@ -110,7 +110,7 @@ class MyDataProcessor(DataProcessor):
             input_text = row['sentence']
             output_text = row['labels']
             prompt = PROMPT.format(input_text, output_text)
-            instruction = instruction_template.format(input_text)
+            instruction = instruction_template + input_text
             instructions.append(instruction)
             input_texts.append(prompt)
         
