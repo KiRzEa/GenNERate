@@ -309,10 +309,12 @@ class NERTrainingPipeline:
         Returns:
             list: The list of predicted labels.
         """
-        input_ids = self.tokenizer(instruction_template + example + response_template, return_tensors="pt").input_ids.to(self.device)
-        outputs = self.trainer.model.generate(input_ids=input_ids, max_new_tokens=512, eos_token_id=self.tokenizer.eos_token_id)
+        inputs = self.tokenizer(instruction_template + example + response_template, return_tensors="pt", max_length=512, truncation=True, padding="max_length")
+        input_ids = inputs.input_ids.to(self.device)
+        attention_mask = inputs.attention_mask.to(self.device)
         
-        # preds = outputs[:, self.max_input_length:].detach().cpu().numpy()
+        outputs = self.trainer.model.generate(input_ids=input_ids, attention_mask=attention_mask, max_new_tokens=128, eos_token_id=self.tokenizer.eos_token_id)
+        
         preds = outputs.detach().cpu().numpy()
         return self.tokenizer.batch_decode(preds, skip_special_tokens=True)
 
