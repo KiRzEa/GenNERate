@@ -92,7 +92,7 @@ class NERTrainingPipeline:
 
         self.model = get_peft_model(self.base_model, self.peft_config).to(self.device)
         # self.model, self.tokenizer = setup_chat_format(self.model, self.tokenizer)
-        response_template_ids = self.tokenizer.encode(response_template, add_special_tokens=False)
+        response_template_ids = self.tokenizer.encode(response_template, add_special_tokens=False)[1:]
         for j in range(5):
             sample = PROMPT.format(self.dataset['train']['input'][j], self.dataset['train']['output'][j])
             sample_ids = self.tokenizer.encode(sample, add_special_tokens=False)
