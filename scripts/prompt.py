@@ -43,7 +43,7 @@ If no named entities found, return Nah.
 
 **Input sentence**: """
 
-response_template = "\n**Output:** "
+response_template = "\n**Output:**"
 
 def formatting_prompts_func(example):
     output_texts = []
