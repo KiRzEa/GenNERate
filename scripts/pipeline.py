@@ -91,7 +91,7 @@ class NERTrainingPipeline:
                                                                 force_download=False)
 
         self.model = get_peft_model(self.base_model, self.peft_config).to(self.device)
-        self.model, self.tokenizer = setup_chat_format(self.model, self.tokenizer)
+        # self.model, self.tokenizer = setup_chat_format(self.model, self.tokenizer)
         self.collator = DataCollatorForCompletionOnlyLM(instruction_template=instruction_template, response_template=response_template, tokenizer=self.tokenizer, mlm=False)
 
         self.print_trainable_parameters()
