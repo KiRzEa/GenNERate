@@ -259,10 +259,7 @@ class NERTrainingPipeline:
         # self.model, optimizer, self.train_dataloader, lr_scheduler = accelerator.prepare(
         #     self.model, optimizer, self.train_dataloader, lr_scheduler
         # )
-        for batch in self.trainer.get_train_dataloader():
-            print("Batch input_ids:", batch['input_ids'])
-            print("Batch labels:", batch['labels'])
-            break  # Only inspect the first batch
+
         start_time = time.time()
         self.trainer.train()
         # for epoch in range(self.num_epochs):
