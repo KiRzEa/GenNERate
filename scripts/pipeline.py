@@ -99,6 +99,8 @@ class NERTrainingPipeline:
         self.max_length = self.get_max_lengths()
         # self.max_input_length, self.max_output_length, self.max_length = self.get_max_lengths()
         # self.processed_datasets = self.preprocess_datasets()
+        print(self.dataset['train']['prompt'][0])
+        print(self.dataset['train']['text'][0])
         self.processed_datasets = self.dataset.remove_columns([col for col in self.dataset['train'].column_names if col not in ['text']])
         print(self.processed_datasets)
         # self.train_dataloader, self.test_dataloader = self.create_dataloaders()
@@ -292,10 +294,12 @@ class NERTrainingPipeline:
         Returns:
             list: The list of predicted labels.
         """
-        input_ids = self.tokenizer(example, max_length=self.max_input_length, return_tensors="pt", padding="max_length", truncation=True).input_ids.to(self.device)
-        outputs = self.trainer.model.generate(input_ids=input_ids, max_new_tokens=self.max_output_length, eos_token_id=self.tokenizer.eos_token_id)
+        input_ids = self.tokenizer(example, max_length=512, return_tensors="pt", padding="max_length", truncation=True).input_ids.to(self.device)
+        with torch.no_grad():
+            outputs = self.trainer.model.generate(input_ids=input_ids, max_new_tokens=512, eos_token_id=self.tokenizer.eos_token_id)
         
-        preds = outputs[:, self.max_input_length:].detach().cpu().numpy()
+        # preds = outputs[:, self.max_input_length:].detach().cpu().numpy()
+        preds = outputs.detach().cpu().numpy()
         return self.tokenizer.batch_decode(preds, skip_special_tokens=True)
 
     def evaluate(self):
