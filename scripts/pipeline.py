@@ -334,7 +334,7 @@ class NERTrainingPipeline:
         start_time = time.time()
         test_pred = []
         with torch.inference_mode():
-            for i in tqdm(range(0, len(self.dataset['test']['input'])), self.batch_size * 2):
+            for i in tqdm(range(0, len(self.dataset['test']['input']), self.batch_size * 2)):
                 batch_text = self.dataset['test']['input'][i: i + self.batch_size * 2]
                 batch_pred = [pred.split(response_template)[1].strip() for pred in self.get_prediction(batch_text)]
                 test_pred.extend(batch_pred)
