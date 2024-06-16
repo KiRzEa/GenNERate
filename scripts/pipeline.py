@@ -263,7 +263,7 @@ class NERTrainingPipeline:
             print("Batch input_ids:", batch['input_ids'])
             print("Batch labels:", batch['labels'])
             break  # Only inspect the first batch
-            start_time = time.time()
+        start_time = time.time()
         self.trainer.train()
         # for epoch in range(self.num_epochs):
         #     self.model.train()
