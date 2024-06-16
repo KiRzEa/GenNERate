@@ -44,3 +44,10 @@ If no named entities found, return Nah.
 **Input sentence**: """
 
 response_template = "\n**Output:** "
+
+def formatting_prompts_func(example):
+    output_texts = []
+    for i in range(len(example['input'])):
+        text = PROMPT.format(example['input'], example['output'])
+        output_texts.append(text)
+    return output_texts

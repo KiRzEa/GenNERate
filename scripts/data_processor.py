@@ -104,14 +104,10 @@ class MyDataProcessor(DataProcessor):
         DataFrame: DataFrame with constructed prompts.
         """
         raw_tokens = df['words'].tolist()
-        input_texts = []
-        instructions = []
+        inputs = []
+        outputs = []
         for _, row in df.iterrows():
-            input_text = row['sentence']
-            output_text = row['labels']
-            prompt = PROMPT.format(input_text, output_text)
-            instruction = instruction_template + input_text
-            instructions.append(instruction)
-            input_texts.append(prompt)
+            inputs.append(df['sentence'])
+            outputs.append(df['labels'])
         
-        return pd.DataFrame(list(zip(raw_tokens, df['tags'], input_texts, instructions)), columns=['words', 'tags', 'text', 'prompt'])
+        return pd.DataFrame(list(zip(raw_tokens, df['tags'], input_texts, output_texts)), columns=['words', 'tags', 'input', 'output'])

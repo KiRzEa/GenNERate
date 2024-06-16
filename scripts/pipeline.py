@@ -92,16 +92,16 @@ class NERTrainingPipeline:
 
         self.model = get_peft_model(self.base_model, self.peft_config).to(self.device)
         # self.model, self.tokenizer = setup_chat_format(self.model, self.tokenizer)
-        self.collator = DataCollatorForCompletionOnlyLM(instruction_template=instruction_template, response_template=response_template, tokenizer=self.tokenizer, mlm=False)
+        self.collator = DataCollatorForCompletionOnlyLM(response_template=response_template, tokenizer=self.tokenizer)
 
         self.print_trainable_parameters()
         print(self.tokenizer)
         self.max_length = self.get_max_lengths()
         # self.max_input_length, self.max_output_length, self.max_length = self.get_max_lengths()
         # self.processed_datasets = self.preprocess_datasets()
-        print(self.dataset['train']['prompt'][0])
-        print(self.dataset['train']['text'][0])
-        self.processed_datasets = self.dataset.remove_columns([col for col in self.dataset['train'].column_names if col not in ['text']])
+        print(self.dataset['train']['input'][0])
+        print(self.dataset['train']['output'][0])
+        self.processed_datasets = self.dataset.remove_columns([col for col in self.dataset['train'].column_names if col not in ['input', 'output']])
         print(self.processed_datasets)
         # self.train_dataloader, self.test_dataloader = self.create_dataloaders()
         self.trainer = SFTTrainer(
@@ -111,13 +111,12 @@ class NERTrainingPipeline:
             peft_config=self.peft_config,
             max_seq_length=self.max_length,
             tokenizer=self.tokenizer,
-            dataset_text_field='text',
             args=self.training_arguments,
             packing=False,
-            data_collator=self.collator
+            data_collator=self.collator,
+            formatting_func=formatting_prompts_func
         )
 
-    
     def get_target_modules(self):
         if self.architectures == 'BloomForCausalLM':
             target_modules = [
@@ -176,7 +175,7 @@ class NERTrainingPipeline:
         # max_length = max([inp + out for inp, out in zip(output_length, input_length)])
 
         # return max_input_length, max_output_length, max_length
-        return max([len(self.tokenizer(text).input_ids) for text in self.dataset['train']['text']])
+        return max([len(self.tokenizer(PROMPT.format(inp, out)).input_ids) for inp, out in zip(self.dataset['train']['input'], self.dataset['train']['output'])])
 
     # def preprocess_function(self, examples):
     #     """
@@ -294,7 +293,7 @@ class NERTrainingPipeline:
         Returns:
             list: The list of predicted labels.
         """
-        input_ids = self.tokenizer(example, max_length=512, return_tensors="pt").input_ids.to(self.device)
+        input_ids = self.tokenizer(instruction_template + example, max_length=512, return_tensors="pt").input_ids.to(self.device)
         outputs = self.trainer.model.generate(input_ids=input_ids, max_new_tokens=512, eos_token_id=self.tokenizer.eos_token_id)
         
         # preds = outputs[:, self.max_input_length:].detach().cpu().numpy()
@@ -317,8 +316,8 @@ class NERTrainingPipeline:
 
         start_time = time.time()
         test_pred = []
-        for i in tqdm(range(0, len(self.dataset['test']['prompt']))):
-            batch_text = self.dataset['test']['prompt'][i]
+        for i in tqdm(range(0, len(self.dataset['test']['input']))):
+            batch_text = self.dataset['test']['input'][i]
             batch_pred = self.get_prediction(batch_text)
             test_pred.extend(batch_pred)
             print(test_pred[-1])
@@ -328,9 +327,9 @@ class NERTrainingPipeline:
         df = pd.DataFrame(list(zip(
             self.dataset['test']['words'],
             self.dataset['test']['tags'],
-            self.dataset['test']['prompt'],
+            self.dataset['test']['input'],
             test_pred
-        )), columns=['words', 'tags', 'prompt', 'pred'])
+        )), columns=['words', 'tags', 'input', 'pred'])
 
         df.to_csv(self.model_name.replace("/", "-") + "_test.csv", index=False)
         evaluator.evaluate(df, 'syllable' if self.syllable else 'word')
