@@ -113,7 +113,7 @@ class NERTrainingPipeline:
             tokenizer=self.tokenizer,
             args=self.training_arguments,
             packing=False,
-            data_collator=self.collator,
+            # data_collator=self.collator,
             formatting_func=formatting_prompts_func
         )
 
@@ -259,7 +259,11 @@ class NERTrainingPipeline:
         # self.model, optimizer, self.train_dataloader, lr_scheduler = accelerator.prepare(
         #     self.model, optimizer, self.train_dataloader, lr_scheduler
         # )
-        start_time = time.time()
+        for batch in self.trainer.get_train_dataloader():
+            print("Batch input_ids:", batch['input_ids'])
+            print("Batch labels:", batch['labels'])
+            break  # Only inspect the first batch
+            start_time = time.time()
         self.trainer.train()
         # for epoch in range(self.num_epochs):
         #     self.model.train()
@@ -293,7 +297,7 @@ class NERTrainingPipeline:
         Returns:
             list: The list of predicted labels.
         """
-        input_ids = self.tokenizer(instruction_template + example, max_length=512, return_tensors="pt").input_ids.to(self.device)
+        input_ids = self.tokenizer(instruction_template + example, return_tensors="pt").input_ids.to(self.device)
         outputs = self.trainer.model.generate(input_ids=input_ids, max_new_tokens=512, eos_token_id=self.tokenizer.eos_token_id)
         
         # preds = outputs[:, self.max_input_length:].detach().cpu().numpy()

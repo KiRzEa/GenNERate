@@ -50,4 +50,5 @@ def formatting_prompts_func(example):
     for i in range(len(example['input'])):
         text = PROMPT.format(example['input'][i], example['output'][i])
         output_texts.append(text)
+    print(output_texts[-1])
     return output_texts
