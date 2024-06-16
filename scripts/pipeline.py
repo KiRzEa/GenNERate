@@ -102,6 +102,8 @@ class NERTrainingPipeline:
                     print("Response Template Found!")
                     is_found = True
             if not is_found:
+                print(f"Sample: {sample}")
+                print(f"Response Template: {response_template}")
                 print(f"Sample Ids: {sample_ids}")
                 print(f"Response Ids: {response_template_ids}")
                 print("="*50)
