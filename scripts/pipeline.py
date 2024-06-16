@@ -99,7 +99,7 @@ class NERTrainingPipeline:
         # self.processed_datasets = self.preprocess_datasets()
         self.processed_datasets = self.dataset.remove_columns([col for col in self.dataset['train'].column_names if col not in ['text']])
         print(self.processed_datasets)
-        self.train_dataloader, self.test_dataloader = self.create_dataloaders()
+        # self.train_dataloader, self.test_dataloader = self.create_dataloaders()
         self.trainer = SFTTrainer(
             model=self.model,
             train_dataset=self.processed_datasets["train"],
