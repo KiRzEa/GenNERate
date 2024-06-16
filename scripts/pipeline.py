@@ -294,9 +294,8 @@ class NERTrainingPipeline:
         Returns:
             list: The list of predicted labels.
         """
-        input_ids = self.tokenizer(example, max_length=512, return_tensors="pt", padding="max_length", truncation=True).input_ids.to(self.device)
-        with torch.no_grad():
-            outputs = self.trainer.model.generate(input_ids=input_ids, max_new_tokens=512, eos_token_id=self.tokenizer.eos_token_id)
+        input_ids = self.tokenizer(example, max_length=512, return_tensors="pt").input_ids.to(self.device)
+        outputs = self.trainer.model.generate(input_ids=input_ids, max_new_tokens=512, eos_token_id=self.tokenizer.eos_token_id)
         
         # preds = outputs[:, self.max_input_length:].detach().cpu().numpy()
         preds = outputs.detach().cpu().numpy()
@@ -318,8 +317,8 @@ class NERTrainingPipeline:
 
         start_time = time.time()
         test_pred = []
-        for i in tqdm(range(0, len(self.dataset['test']['prompt']), self.batch_size * 2)):
-            batch_text = self.dataset['test']['prompt'][i:i + self.batch_size * 2]
+        for i in tqdm(range(0, len(self.dataset['test']['prompt']))):
+            batch_text = self.dataset['test']['prompt'][i]
             batch_pred = self.get_prediction(batch_text)
             test_pred.extend(batch_pred)
             print(test_pred[-1])
