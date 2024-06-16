@@ -96,13 +96,15 @@ class NERTrainingPipeline:
         for j in range(5):
             sample = PROMPT.format(self.dataset['train']['input'][j], self.dataset['train']['output'][j])
             sample_ids = self.tokenizer.encode(sample, add_special_tokens=False)
+            is_found = False
             for i in range(0, len(sample_ids), len(response_template_ids)):
                 if sample_ids[i:i+len(response_template_ids)] == response_template_ids:
                     print("Response Template Found!")
-                else:
-                    print(f"Sample Ids: {sample_ids}")
-                    print(f"Response Ids: {response_template_ids}")
-                    print("="*50)
+                    is_found = True
+            if not is_found:
+                print(f"Sample Ids: {sample_ids}")
+                print(f"Response Ids: {response_template_ids}")
+                print("="*50)
         self.collator = DataCollatorForCompletionOnlyLM(response_template_ids, tokenizer=self.tokenizer)
 
         self.print_trainable_parameters()
