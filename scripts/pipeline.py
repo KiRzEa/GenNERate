@@ -99,6 +99,10 @@ class NERTrainingPipeline:
             for i in range(0, len(sample_ids), len(response_template_ids)):
                 if sample_ids[i:i+len(response_template_ids)] == response_template_ids:
                     print("Response Template Found!")
+                else:
+                    print(f"Sample Ids: {sample_ids}")
+                    print(f"Response Ids: {response_template_ids}")
+                    print("="*50)
         self.collator = DataCollatorForCompletionOnlyLM(response_template_ids, tokenizer=self.tokenizer)
 
         self.print_trainable_parameters()
