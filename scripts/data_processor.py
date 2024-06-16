@@ -110,4 +110,4 @@ class MyDataProcessor(DataProcessor):
             inputs.append(df['sentence'])
             outputs.append(df['labels'])
         
-        return pd.DataFrame(list(zip(raw_tokens, df['tags'], input_texts, output_texts)), columns=['words', 'tags', 'input', 'output'])
+        return pd.DataFrame(list(zip(raw_tokens, df['tags'], inputs, outputs)), columns=['words', 'tags', 'input', 'output'])
