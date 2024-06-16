@@ -48,6 +48,6 @@ response_template = "\n**Output:** "
 def formatting_prompts_func(example):
     output_texts = []
     for i in range(len(example['input'])):
-        text = PROMPT.format(example['input'], example['output'])
+        text = PROMPT.format(example['input'][i], example['output'][i])
         output_texts.append(text)
     return output_texts
