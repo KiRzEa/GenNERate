@@ -103,11 +103,10 @@ class MyDataProcessor(DataProcessor):
         Returns:
         DataFrame: DataFrame with constructed prompts.
         """
-        raw_tokens = df['words'].tolist()
         inputs = []
         outputs = []
         for _, row in df.iterrows():
-            inputs.append(df['sentence'])
-            outputs.append(df['labels'])
+            inputs.append(row['sentence'])
+            outputs.append(row['labels'])
         
-        return pd.DataFrame(list(zip(raw_tokens, df['tags'], inputs, outputs)), columns=['words', 'tags', 'input', 'output'])
+        return pd.DataFrame(list(zip(df['words'], df['tags'], inputs, outputs)), columns=['words', 'tags', 'input', 'output'])
