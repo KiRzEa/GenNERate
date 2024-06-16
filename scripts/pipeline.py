@@ -97,11 +97,11 @@ class NERTrainingPipeline:
             sample = PROMPT.format(self.dataset['train']['input'][j], self.dataset['train']['output'][j])
             sample_ids = self.tokenizer.encode(sample, add_special_tokens=False)
             is_found = False
-            for i in range(0, len(sample_ids), len(response_template_ids)):
+            for i in range(0, len(sample_ids)):
                 if sample_ids[i:i+len(response_template_ids)] == response_template_ids:
                     print("Response Template Found!")
                     is_found = True
-            if not is_found:
+            if is_found == False:
                 print(f"Sample: {sample}")
                 print(f"Response Template: {response_template}")
                 print(f"Sample Ids: {sample_ids}")
