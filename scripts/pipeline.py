@@ -9,7 +9,7 @@ from trl import SFTTrainer, DataCollatorForCompletionOnlyLM, setup_chat_format
 from tqdm import tqdm
 import pandas as pd
 
-from prompt import instruction_template, response_template
+from prompt import *
 from data_processor import MyDataProcessor  # Assume the data processor code is in data_processor.py
 from ner_evaluator import NEREvaluator  # Assume the evaluator code is in ner_evaluator.py
 
