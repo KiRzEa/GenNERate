@@ -298,7 +298,6 @@ class NERTrainingPipeline:
         stop_time = time.time()
         print("Training time (seconds): ", stop_time - start_time)
 
-    @torch.inference_mode()
     def get_prediction(self, example):
         """
         Generate predictions for input examples.
@@ -334,11 +333,12 @@ class NERTrainingPipeline:
         self.trainer.model.eval()
         start_time = time.time()
         test_pred = []
-        for i in tqdm(range(0, len(self.dataset['test']['input']))):
-            batch_text = self.dataset['test']['input'][i]
-            batch_pred = self.get_prediction(batch_text)
-            test_pred.extend(batch_pred)
-            print(test_pred[-1])
+        with torch.inference_mode():
+            for i in tqdm(range(0, len(self.dataset['test']['input'])), self.batch_size * 2):
+                batch_text = self.dataset['test']['input'][i: i + self.batch_size * 2]
+                batch_pred = [pred.split(response_template)[1].strip() for pred in self.get_prediction(batch_text)]
+                test_pred.extend(batch_pred)
+                print(test_pred[-1])
         stop_time = time.time()
         print("Inference time (seconds): ", stop_time - start_time)
 
