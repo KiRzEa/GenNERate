@@ -92,6 +92,8 @@ class NERTrainingPipeline:
 
         self.model = get_peft_model(self.base_model, self.peft_config).to(self.device)
         self.model, self.tokenizer = setup_chat_format(self.model, self.tokenizer)
+        self.collator = DataCollatorForCompletionOnlyLM(instruction_template=instruction_template, response_template=response_template, tokenizer=self.tokenizer, mlm=False)
+
         self.print_trainable_parameters()
         print(self.tokenizer)
         self.max_length = self.get_max_lengths()
@@ -110,6 +112,7 @@ class NERTrainingPipeline:
             dataset_text_field='text',
             args=self.training_arguments,
             packing=False,
+            data_collator=self.collator
         )
 
     
@@ -323,9 +326,8 @@ class NERTrainingPipeline:
             self.dataset['test']['words'],
             self.dataset['test']['tags'],
             self.dataset['test']['prompt'],
-            self.dataset['test']['completion'],
             test_pred
-        )), columns=['words', 'tags', 'prompt', 'gold', 'pred'])
+        )), columns=['words', 'tags', 'prompt', 'pred'])
 
         df.to_csv(self.model_name.replace("/", "-") + "_test.csv", index=False)
         evaluator.evaluate(df, 'syllable' if self.syllable else 'word')

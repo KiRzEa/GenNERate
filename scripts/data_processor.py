@@ -1,6 +1,6 @@
 import pandas as pd
 from datasets import Dataset, DatasetDict
-from prompt import PROMPT
+from prompt import *
 from abc import ABC, abstractmethod
 
 class DataProcessor(ABC):
@@ -105,11 +105,13 @@ class MyDataProcessor(DataProcessor):
         """
         raw_tokens = df['words'].tolist()
         input_texts = []
-        
+        instructions = []
         for _, row in df.iterrows():
             input_text = row['sentence']
             output_text = row['labels']
             prompt = PROMPT.format(input_text, output_text)
+            instruction = instruction_template.format(input_text)
+            instructions.append(instruction)
             input_texts.append(prompt)
         
-        return pd.DataFrame(list(zip(raw_tokens, df['tags'], input_texts)), columns=['words', 'tags', 'text'])
+        return pd.DataFrame(list(zip(raw_tokens, df['tags'], input_texts, instructions)), columns=['words', 'tags', 'text', 'prompt'])
