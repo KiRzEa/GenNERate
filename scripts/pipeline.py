@@ -69,7 +69,7 @@ class NERTrainingPipeline:
             # gradient_accumulation_steps=16,
             optim="adamw_torch",
             num_train_epochs=self.num_epochs,
-            logging_steps=256,
+            logging_steps=128,
             # eval_strategy="epoch",
             save_strategy="no",
             load_best_model_at_end=False,
@@ -92,7 +92,14 @@ class NERTrainingPipeline:
 
         self.model = get_peft_model(self.base_model, self.peft_config).to(self.device)
         # self.model, self.tokenizer = setup_chat_format(self.model, self.tokenizer)
-        self.collator = DataCollatorForCompletionOnlyLM(response_template=response_template, tokenizer=self.tokenizer)
+        response_template_ids = self.tokenizer.encode(response_template, add_special_tokens=False)
+        for j in range(5):
+            sample = PROMPT.format(self.dataset['train']['input'][j], self.dataset['train']['output'][j])
+            sample_ids = self.tokenizer.encode(sample, add_special_tokens=False)
+            for i in range(0, len(sample_ids), len(response_template_ids)):
+                if sample_ids[i:i+len(response_template_ids)] == response_template_ids:
+                    print("Response Template Found!")
+        self.collator = DataCollatorForCompletionOnlyLM(response_template_ids, tokenizer=self.tokenizer)
 
         self.print_trainable_parameters()
         print(self.tokenizer)
