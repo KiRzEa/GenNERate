@@ -330,8 +330,8 @@ class NERTrainingPipeline:
             None
         """
         evaluator = NEREvaluator(self.model_name)
-        self.model.eval()
-
+        self.trainer.model = torch.compile(self.trainer.model)
+        self.trainer.model.eval()
         start_time = time.time()
         test_pred = []
         for i in tqdm(range(0, len(self.dataset['test']['input']))):
