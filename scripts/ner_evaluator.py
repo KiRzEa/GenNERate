@@ -65,7 +65,7 @@ class NEREvaluator:
         try:
             for label in example.split('\n'):
                 if len(label.split('::')) == 2:
-                    entities.append(label)
+                    entities.append(label.strip())
                 else:
                     continue
         except Exception as e:

@@ -5,10 +5,11 @@ from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, default_data_collator, get_linear_schedule_with_warmup, TrainingArguments, GenerationConfig
 from peft import LoraConfig, get_peft_model, TaskType
 from accelerate import Accelerator
-from trl import SFTTrainer
+from trl import SFTTrainer, DataCollatorForCompletionOnlyLM, setup_chat_format
 from tqdm import tqdm
 import pandas as pd
 
+from prompt import instruction_template, response_template
 from data_processor import MyDataProcessor  # Assume the data processor code is in data_processor.py
 from ner_evaluator import NEREvaluator  # Assume the evaluator code is in ner_evaluator.py
 
@@ -90,10 +91,13 @@ class NERTrainingPipeline:
                                                                 force_download=False)
 
         self.model = get_peft_model(self.base_model, self.peft_config).to(self.device)
+        self.model, self.tokenizer = setup_chat_format(self.model, self.tokenizer)
         self.print_trainable_parameters()
-        self.max_input_length, self.max_output_length, self.max_length = self.get_max_lengths()
+        print(self.tokenizer)
+        self.max_length = self.get_max_lengths()
+        # self.max_input_length, self.max_output_length, self.max_length = self.get_max_lengths()
         # self.processed_datasets = self.preprocess_datasets()
-        self.processed_datasets = self.dataset.remove_columns([col for col in self.dataset['train'].column_names if col not in ['prompt', 'completion']])
+        self.processed_datasets = self.dataset.remove_columns([col for col in self.dataset['train'].column_names if col not in ['text']])
         print(self.processed_datasets)
         self.train_dataloader, self.test_dataloader = self.create_dataloaders()
         self.trainer = SFTTrainer(
@@ -103,6 +107,7 @@ class NERTrainingPipeline:
             peft_config=self.peft_config,
             max_seq_length=self.max_length,
             tokenizer=self.tokenizer,
+            dataset_text_field='text',
             args=self.training_arguments,
             packing=False,
         )
@@ -159,79 +164,81 @@ class NERTrainingPipeline:
         Returns:
             tuple: A tuple containing the maximum input length, maximum output length, and maximum combined length.
         """
-        output_length = [len(self.tokenizer(review)["input_ids"]) for review in self.dataset['train']["completion"]]
-        input_length = [len(self.tokenizer(review)["input_ids"]) for review in self.dataset['train']["prompt"]]
-        max_output_length = max(output_length)
-        max_input_length = max(input_length)
-        max_length = max([inp + out for inp, out in zip(output_length, input_length)])
-        return max_input_length, max_output_length, max_length
+        # output_length = [len(self.tokenizer(review)["input_ids"]) for review in self.dataset['train']["completion"]]
+        # input_length = [len(self.tokenizer(review)["input_ids"]) for review in self.dataset['train']["prompt"]]
+        # max_output_length = max(output_length)
+        # max_input_length = max(input_length)
+        # max_length = max([inp + out for inp, out in zip(output_length, input_length)])
 
-    def preprocess_function(self, examples):
-        """
-        Preprocess the dataset examples.
+        # return max_input_length, max_output_length, max_length
+        return max([len(self.tokenizer(text).input_ids) for text in self.dataset['train']['text']])
 
-        Args:
-            examples (dict): A dictionary containing input and output examples.
+    # def preprocess_function(self, examples):
+    #     """
+    #     Preprocess the dataset examples.
 
-        Returns:
-            dict: Preprocessed model inputs.
-        """
-        batch_size = len(examples["prompt"])
-        inputs = [item + " " for item in examples["prompt"]]
-        targets = examples["completion"]
-        model_inputs = self.tokenizer(inputs)
-        labels = self.tokenizer(targets, add_special_tokens=False)
+    #     Args:
+    #         examples (dict): A dictionary containing input and output examples.
 
-        for i in range(batch_size):
-            sample_input_ids = model_inputs["input_ids"][i]
-            label_input_ids = labels["input_ids"][i] + [self.tokenizer.eos_token_id]
-            model_inputs["input_ids"][i] = sample_input_ids + label_input_ids
-            labels["input_ids"][i] = [-100] * len(sample_input_ids) + label_input_ids
-            model_inputs["attention_mask"][i] = [1] * len(model_inputs["input_ids"][i])
+    #     Returns:
+    #         dict: Preprocessed model inputs.
+    #     """
+    #     batch_size = len(examples["prompt"])
+    #     inputs = [item + " " for item in examples["prompt"]]
+    #     targets = examples["completion"]
+    #     model_inputs = self.tokenizer(inputs)
+    #     labels = self.tokenizer(targets, add_special_tokens=False)
 
-        for i in range(batch_size):
-            sample_input_ids = model_inputs["input_ids"][i]
-            label_input_ids = labels["input_ids"][i]
-            model_inputs["input_ids"][i] = [self.tokenizer.pad_token_id] * (self.max_length - len(sample_input_ids)) + sample_input_ids
-            model_inputs["attention_mask"][i] = [0] * (self.max_length - len(sample_input_ids)) + model_inputs["attention_mask"][i]
-            labels["input_ids"][i] = [-100] * (self.max_length - len(sample_input_ids)) + label_input_ids
-            model_inputs["input_ids"][i] = torch.tensor(model_inputs["input_ids"][i][:self.max_length])
-            model_inputs["attention_mask"][i] = torch.tensor(model_inputs["attention_mask"][i][:self.max_length]) 
-            labels["input_ids"][i] = torch.tensor(labels["input_ids"][i][:self.max_length])
+    #     for i in range(batch_size):
+    #         sample_input_ids = model_inputs["input_ids"][i]
+    #         label_input_ids = labels["input_ids"][i] + [self.tokenizer.eos_token_id]
+    #         model_inputs["input_ids"][i] = sample_input_ids + label_input_ids
+    #         labels["input_ids"][i] = [-100] * len(sample_input_ids) + label_input_ids
+    #         model_inputs["attention_mask"][i] = [1] * len(model_inputs["input_ids"][i])
 
-        model_inputs["labels"] = labels["input_ids"]
-        return model_inputs
+    #     for i in range(batch_size):
+    #         sample_input_ids = model_inputs["input_ids"][i]
+    #         label_input_ids = labels["input_ids"][i]
+    #         model_inputs["input_ids"][i] = [self.tokenizer.pad_token_id] * (self.max_length - len(sample_input_ids)) + sample_input_ids
+    #         model_inputs["attention_mask"][i] = [0] * (self.max_length - len(sample_input_ids)) + model_inputs["attention_mask"][i]
+    #         labels["input_ids"][i] = [-100] * (self.max_length - len(sample_input_ids)) + label_input_ids
+    #         model_inputs["input_ids"][i] = torch.tensor(model_inputs["input_ids"][i][:self.max_length])
+    #         model_inputs["attention_mask"][i] = torch.tensor(model_inputs["attention_mask"][i][:self.max_length]) 
+    #         labels["input_ids"][i] = torch.tensor(labels["input_ids"][i][:self.max_length])
 
-    def preprocess_datasets(self):
-        """
-        Preprocess the training and testing datasets.
+    #     model_inputs["labels"] = labels["input_ids"]
+    #     return model_inputs
 
-        Returns:
-            DatasetDict: The preprocessed datasets.
-        """
-        return self.dataset.map(
-            self.preprocess_function,
-            batched=True,
-            num_proc=1,
-            remove_columns=self.dataset["train"].column_names,
-            load_from_cache_file=False,
-            desc="Running tokenizer on dataset",
-        )
+    # def preprocess_datasets(self):
+    #     """
+    #     Preprocess the training and testing datasets.
 
-    def create_dataloaders(self):
-        """
-        Create DataLoaders for training and testing.
+    #     Returns:
+    #         DatasetDict: The preprocessed datasets.
+    #     """
+    #     return self.dataset.map(
+    #         self.preprocess_function,
+    #         batched=True,
+    #         num_proc=1,
+    #         remove_columns=self.dataset["train"].column_names,
+    #         load_from_cache_file=False,
+    #         desc="Running tokenizer on dataset",
+    #     )
 
-        Returns:
-            tuple: A tuple containing the training and testing DataLoaders.
-        """
-        train_dataloader = DataLoader(
-            self.processed_datasets['train'], shuffle=True, collate_fn=default_data_collator, batch_size=self.batch_size, pin_memory=True
-        )
-        test_dataloader = DataLoader(
-            self.processed_datasets['test'], collate_fn=default_data_collator, batch_size=self.batch_size, pin_memory=True
-        )
-        return train_dataloader, test_dataloader
+    # def create_dataloaders(self):
+    #     """
+    #     Create DataLoaders for training and testing.
+
+    #     Returns:
+    #         tuple: A tuple containing the training and testing DataLoaders.
+    #     """
+    #     train_dataloader = DataLoader(
+    #         self.processed_datasets['train'], shuffle=True, collate_fn=default_data_collator, batch_size=self.batch_size, pin_memory=True
+    #     )
+    #     test_dataloader = DataLoader(
+    #         self.processed_datasets['test'], collate_fn=default_data_collator, batch_size=self.batch_size, pin_memory=True
+    #     )
+    #     return train_dataloader, test_dataloader
 
     def train(self):
         """

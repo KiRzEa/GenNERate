@@ -91,7 +91,7 @@ class MyDataProcessor(DataProcessor):
         df['labels'] = df.apply(lambda x: '\n'.join(x['raw_labels']), axis=1)
         df['labels'] = df['labels'].apply(lambda x: 'Nah' if x == '' else x)
         df['sentence'] = df['words'].apply(lambda x: ' '.join(x))
-        return df[['words', 'tags', 'sentence', 'labels', 'raw_labels']]
+        return df[['words', 'tags', 'sentence', 'labels']]
 
     def construct_prompt(self, df):
         """
@@ -103,14 +103,13 @@ class MyDataProcessor(DataProcessor):
         Returns:
         DataFrame: DataFrame with constructed prompts.
         """
-        output_text = df['labels'].tolist()
         raw_tokens = df['words'].tolist()
-        input_text = []
+        input_texts = []
         
         for _, row in df.iterrows():
-            input_sentence = row['sentence']
-            prompt = PROMPT.format(input_sentence)
-            input_text.append(prompt)
+            input_text = row['sentence']
+            output_text = row['labels']
+            prompt = PROMPT.format(input_text, output_text)
+            input_texts.append(prompt)
         
-        assert len(input_text) == len(output_text)
-        return pd.DataFrame(list(zip(raw_tokens, df['tags'], input_text, output_text)), columns=['words', 'tags', 'prompt', 'completion'])
+        return pd.DataFrame(list(zip(raw_tokens, df['tags'], input_texts)), columns=['words', 'tags', 'text'])
