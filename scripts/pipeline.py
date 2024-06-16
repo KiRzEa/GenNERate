@@ -113,7 +113,7 @@ class NERTrainingPipeline:
             tokenizer=self.tokenizer,
             args=self.training_arguments,
             packing=False,
-            # data_collator=self.collator,
+            data_collator=self.collator,
             formatting_func=formatting_prompts_func
         )
 
