@@ -76,7 +76,7 @@ class NERTrainingPipeline:
             load_best_model_at_end=False,
             warmup_ratio = 0.1,
             learning_rate=self.lr,
-            report_to="all",
+            report_to="none",
             bf16=self.bf16,
             fp16=True,
             half_precision_backend="auto"
@@ -88,6 +88,7 @@ class NERTrainingPipeline:
         self.base_model = AutoModelForCausalLM.from_pretrained(self.model_name, 
                                                                 token='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',
                                                                 quantization_config=self.quant_config,
+                                                                torch_dtype=torch.float16,
                                                                 device_map="auto")
 
         response_template_ids = self.tokenizer.encode(response_template, add_special_tokens=False)[1:]

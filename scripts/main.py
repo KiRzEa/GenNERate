@@ -5,7 +5,6 @@ import warnings
 
 warnings.filterwarnings("ignore")
 os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "1"
-os.environ["WANDB_DISABLED"] = "true"
 
 
 
