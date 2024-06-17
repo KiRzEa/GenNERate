@@ -65,12 +65,10 @@ class NERTrainingPipeline:
         self.training_arguments = TrainingArguments(
             output_dir="checkpoint",
             per_device_train_batch_size=self.batch_size,
-            # per_device_eval_batch_size=self.batch_size,
             # gradient_accumulation_steps=16,
             optim="adamw_torch",
             num_train_epochs=self.num_epochs,
             logging_steps=128,
-            # eval_strategy="epoch",
             save_strategy="no",
             load_best_model_at_end=False,
             warmup_ratio = 0.1,
@@ -82,47 +80,26 @@ class NERTrainingPipeline:
         
         self.dataset = self.create_dataset()
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, token='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')
-        # self.tokenizer.pad_token = self.tokenizer.eos_token
         self.tokenizer.padding_side = "right"
         self.base_model = AutoModelForCausalLM.from_pretrained(self.model_name, 
                                                                 token='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',
                                                                 device_map="auto",
                                                                 use_cache=False,
                                                                 force_download=False)
-
         self.model = get_peft_model(self.base_model, self.peft_config).to(self.device)
-        # self.model, self.tokenizer = setup_chat_format(self.model, self.tokenizer)
+
         response_template_ids = self.tokenizer.encode(response_template, add_special_tokens=False)[1:]
-        for j in range(5):
-            sample = PROMPT.format(self.dataset['train']['input'][j], self.dataset['train']['output'][j])
-            sample_ids = self.tokenizer.encode(sample, add_special_tokens=False)
-            is_found = False
-            for i in range(0, len(sample_ids)):
-                if sample_ids[i:i+len(response_template_ids)] == response_template_ids:
-                    print("Response Template Found!")
-                    is_found = True
-            if is_found == False:
-                print(f"Sample: {sample}")
-                print(f"Response Template: {response_template}")
-                print(f"Sample Ids: {sample_ids}")
-                print(f"Response Ids: {response_template_ids}")
-                print("="*50)
         self.collator = DataCollatorForCompletionOnlyLM(response_template_ids, tokenizer=self.tokenizer)
 
         self.print_trainable_parameters()
-        print(self.tokenizer)
         self.max_length = self.get_max_lengths()
-        # self.max_input_length, self.max_output_length, self.max_length = self.get_max_lengths()
-        # self.processed_datasets = self.preprocess_datasets()
-        print(self.dataset['train']['input'][0])
-        print(self.dataset['train']['output'][0])
+
         self.processed_datasets = self.dataset.remove_columns([col for col in self.dataset['train'].column_names if col not in ['input', 'output']])
         print(self.processed_datasets)
-        # self.train_dataloader, self.test_dataloader = self.create_dataloaders()
+
         self.trainer = SFTTrainer(
             model=self.model,
             train_dataset=self.processed_datasets["train"],
-            # eval_dataset=self.dataset["dev"], 
             peft_config=self.peft_config,
             max_seq_length=self.max_length,
             tokenizer=self.tokenizer,
@@ -183,117 +160,15 @@ class NERTrainingPipeline:
         Returns:
             tuple: A tuple containing the maximum input length, maximum output length, and maximum combined length.
         """
-        # output_length = [len(self.tokenizer(review)["input_ids"]) for review in self.dataset['train']["completion"]]
-        # input_length = [len(self.tokenizer(review)["input_ids"]) for review in self.dataset['train']["prompt"]]
-        # max_output_length = max(output_length)
-        # max_input_length = max(input_length)
-        # max_length = max([inp + out for inp, out in zip(output_length, input_length)])
-
-        # return max_input_length, max_output_length, max_length
         return max([len(self.tokenizer(PROMPT.format(inp, out)).input_ids) for inp, out in zip(self.dataset['train']['input'], self.dataset['train']['output'])])
-
-    # def preprocess_function(self, examples):
-    #     """
-    #     Preprocess the dataset examples.
-
-    #     Args:
-    #         examples (dict): A dictionary containing input and output examples.
-
-    #     Returns:
-    #         dict: Preprocessed model inputs.
-    #     """
-    #     batch_size = len(examples["prompt"])
-    #     inputs = [item + " " for item in examples["prompt"]]
-    #     targets = examples["completion"]
-    #     model_inputs = self.tokenizer(inputs)
-    #     labels = self.tokenizer(targets, add_special_tokens=False)
-
-    #     for i in range(batch_size):
-    #         sample_input_ids = model_inputs["input_ids"][i]
-    #         label_input_ids = labels["input_ids"][i] + [self.tokenizer.eos_token_id]
-    #         model_inputs["input_ids"][i] = sample_input_ids + label_input_ids
-    #         labels["input_ids"][i] = [-100] * len(sample_input_ids) + label_input_ids
-    #         model_inputs["attention_mask"][i] = [1] * len(model_inputs["input_ids"][i])
-
-    #     for i in range(batch_size):
-    #         sample_input_ids = model_inputs["input_ids"][i]
-    #         label_input_ids = labels["input_ids"][i]
-    #         model_inputs["input_ids"][i] = [self.tokenizer.pad_token_id] * (self.max_length - len(sample_input_ids)) + sample_input_ids
-    #         model_inputs["attention_mask"][i] = [0] * (self.max_length - len(sample_input_ids)) + model_inputs["attention_mask"][i]
-    #         labels["input_ids"][i] = [-100] * (self.max_length - len(sample_input_ids)) + label_input_ids
-    #         model_inputs["input_ids"][i] = torch.tensor(model_inputs["input_ids"][i][:self.max_length])
-    #         model_inputs["attention_mask"][i] = torch.tensor(model_inputs["attention_mask"][i][:self.max_length]) 
-    #         labels["input_ids"][i] = torch.tensor(labels["input_ids"][i][:self.max_length])
-
-    #     model_inputs["labels"] = labels["input_ids"]
-    #     return model_inputs
-
-    # def preprocess_datasets(self):
-    #     """
-    #     Preprocess the training and testing datasets.
-
-    #     Returns:
-    #         DatasetDict: The preprocessed datasets.
-    #     """
-    #     return self.dataset.map(
-    #         self.preprocess_function,
-    #         batched=True,
-    #         num_proc=1,
-    #         remove_columns=self.dataset["train"].column_names,
-    #         load_from_cache_file=False,
-    #         desc="Running tokenizer on dataset",
-    #     )
-
-    # def create_dataloaders(self):
-    #     """
-    #     Create DataLoaders for training and testing.
-
-    #     Returns:
-    #         tuple: A tuple containing the training and testing DataLoaders.
-    #     """
-    #     train_dataloader = DataLoader(
-    #         self.processed_datasets['train'], shuffle=True, collate_fn=default_data_collator, batch_size=self.batch_size, pin_memory=True
-    #     )
-    #     test_dataloader = DataLoader(
-    #         self.processed_datasets['test'], collate_fn=default_data_collator, batch_size=self.batch_size, pin_memory=True
-    #     )
-    #     return train_dataloader, test_dataloader
 
     def train(self):
         """
         Train the model.
         """
-        # optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.lr)
-        # lr_scheduler = get_linear_schedule_with_warmup(
-        #     optimizer=optimizer,
-        #     num_warmup_steps=0,
-        #     num_training_steps=(len(self.train_dataloader) * self.num_epochs),
-        # )
-        # accelerator = Accelerator()
-
-        # self.model, optimizer, self.train_dataloader, lr_scheduler = accelerator.prepare(
-        #     self.model, optimizer, self.train_dataloader, lr_scheduler
-        # )
 
         start_time = time.time()
         self.trainer.train()
-        # for epoch in range(self.num_epochs):
-        #     self.model.train()
-        #     total_loss = 0
-        #     for step, batch in enumerate(tqdm(self.train_dataloader)):
-        #         # batch = {k: v.to(self.device) for k, v in batch.items()}
-        #         outputs = self.model(**batch)
-        #         loss = outputs.loss
-        #         total_loss += loss.detach().float()
-        #         # loss.backward()
-        #         accelerator.backward(loss)
-        #         optimizer.step()
-        #         lr_scheduler.step()
-        #         optimizer.zero_grad()
-
-        #     train_epoch_loss = total_loss / len(self.train_dataloader)
-        #     train_ppl = torch.exp(train_epoch_loss)
-        #     print(f"{epoch=}: {train_ppl=} {train_epoch_loss=}")
 
         stop_time = time.time()
         print("Training time (seconds): ", stop_time - start_time)
