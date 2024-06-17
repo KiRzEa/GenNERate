@@ -78,7 +78,7 @@ class NERTrainingPipeline:
             learning_rate=self.lr,
             report_to="none",
             bf16=self.bf16,
-            fp16=True,
+            fp16=self.fp16,
             half_precision_backend="auto"
         )
         
