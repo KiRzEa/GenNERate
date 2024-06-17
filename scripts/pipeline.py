@@ -5,7 +5,6 @@ from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, TrainingArguments, GenerationConfig, BitsAndBytesConfig
 from peft import LoraConfig, get_peft_model, TaskType
 from trl import SFTTrainer, DataCollatorForCompletionOnlyLM, setup_chat_format
-import bitsandbytes as bnb
 from tqdm import tqdm
 import pandas as pd
 
@@ -70,7 +69,7 @@ class NERTrainingPipeline:
             output_dir="checkpoint",
             per_device_train_batch_size=self.batch_size,
             # gradient_accumulation_steps=16,
-            optim=bnb.optim.Adam8bit,
+            optim='adamw_8bit',
             num_train_epochs=self.num_epochs,
             logging_steps=512,
             save_strategy="no",
