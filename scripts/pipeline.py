@@ -4,7 +4,7 @@ import torch
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, TrainingArguments, Trainer, GenerationConfig, BitsAndBytesConfig, DataCollatorForLanguageModeling
 from peft import LoraConfig, get_peft_model, TaskType
-from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
+from trl import SFTTrainer, DataCollatorForCompletionOnlyLM, SFTConfig
 from tqdm import tqdm
 import pandas as pd
 
@@ -79,23 +79,26 @@ class NERTrainingPipeline:
             half_precision_backend="auto"
         )
 
-
-        self.quant_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=getattr(torch, "float16"),
-            bnb_4bit_use_double_quant=False,
+        self.sft_config = SFTConfig(
+            output_dir="checkpoint",
+            per_device_train_batch_size=self.batch_size,
+            num_train_epochs=self.num_epochs,
+            logging_steps=512,
+            save_strategy="no",
+            warmup_ratio = 0.1,
+            learning_rate=self.lr,
+            bf16=self.bf16,
+            fp16=self.fp16,
+            dataset_kwargs={'skip_prepare_dataset': True}
         )
-        
+
         self.dataset = self.create_dataset()
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, token='')
         self.base_model = AutoModelForCausalLM.from_pretrained(self.model_name,
                                                                 token='', 
-                                                                device_map="auto", 
-                                                                quantization_config=self.quant_config, 
-                                                                torch_dtype=torch.float16)
-        self.model = get_peft_model(self.base_model, self.peft_config)
-        self.collator = DataCollatorForLanguageModeling(tokenizer=self.tokenizer, mlm=False)
+                                                                device_map="auto")
+        # self.model = get_peft_model(self.base_model, self.peft_config)
+        # self.collator = DataCollatorForLanguageModeling(tokenizer=self.tokenizer, mlm=False)
 
         # response_template_ids = self.tokenizer.encode(response_template, add_special_tokens=False)[1:]
         # self.collator = DataCollatorForCompletionOnlyLM(response_template_ids, tokenizer=self.tokenizer)
@@ -105,21 +108,21 @@ class NERTrainingPipeline:
         self.processed_datasets = self.preprocess_datasets()
         print(self.processed_datasets)
 
-        # self.trainer = SFTTrainer(
-        #     model=self.base_model,
-        #     train_dataset=self.processed_datasets["train"],
-        #     peft_config=self.peft_config,
-        #     max_seq_length=self.max_length,
-        #     args=self.training_arguments,
-        #     data_collator=self.collator,
-        #     formatting_func=formatting_prompts_func
-        # )
-        self.trainer = Trainer(
-            model=self.model,
-            args=self.training_arguments,
+        self.trainer = SFTTrainer(
+            model=self.base_model,
             train_dataset=self.processed_datasets["train"],
-            data_collator=self.collator
+            peft_config=self.peft_config,
+            max_seq_length=self.max_length,
+            args=self.sft_config
+            # data_collator=self.collator,
+            # formatting_func=formatting_prompts_func
         )
+        # self.trainer = Trainer(
+        #     model=self.model,
+        #     args=self.training_arguments,
+        #     train_dataset=self.processed_datasets["train"],
+        #     data_collator=self.collator
+        # )
 
         self.print_trainable_parameters()
 
