@@ -89,6 +89,7 @@ class NERTrainingPipeline:
             learning_rate=self.lr,
             bf16=self.bf16,
             fp16=self.fp16,
+            report_to='none',
             dataset_kwargs={'skip_prepare_dataset': True}
         )
 
