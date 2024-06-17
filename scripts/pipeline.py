@@ -83,7 +83,7 @@ class NERTrainingPipeline:
         self.quant_config = BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=compute_dtype,
+            bnb_4bit_compute_dtype=getattr(torch, "float16"),
             bnb_4bit_use_double_quant=False,
         )
         
@@ -152,35 +152,35 @@ class NERTrainingPipeline:
         Returns:
             dict: Preprocessed model inputs.
         """
-        # batch_size = len(examples["input"])
-        # inputs = [instruction_template + item + response_template + " " for item in examples["input"]]
-        # targets = examples["output"]
-        # model_inputs = self.tokenizer(inputs)
-        # labels = self.tokenizer(targets, add_special_tokens=False)
+        batch_size = len(examples["input"])
+        inputs = [instruction_template + item + response_template + " " for item in examples["input"]]
+        targets = examples["output"]
+        model_inputs = self.tokenizer(inputs)
+        labels = self.tokenizer(targets, add_special_tokens=False)
 
-        # for i in range(batch_size):
-        #     sample_input_ids = model_inputs["input_ids"][i]
-        #     label_input_ids = labels["input_ids"][i] + [self.tokenizer.eos_token_id]
-        #     model_inputs["input_ids"][i] = sample_input_ids + label_input_ids
-        #     labels["input_ids"][i] = [-100] * len(sample_input_ids) + label_input_ids
-        #     model_inputs["attention_mask"][i] = [1] * len(model_inputs["input_ids"][i])
+        for i in range(batch_size):
+            sample_input_ids = model_inputs["input_ids"][i]
+            label_input_ids = labels["input_ids"][i] + [self.tokenizer.eos_token_id]
+            model_inputs["input_ids"][i] = sample_input_ids + label_input_ids
+            labels["input_ids"][i] = [-100] * len(sample_input_ids) + label_input_ids
+            model_inputs["attention_mask"][i] = [1] * len(model_inputs["input_ids"][i])
 
-        # for i in range(batch_size):
-        #     sample_input_ids = model_inputs["input_ids"][i]
-        #     label_input_ids = labels["input_ids"][i]
-        #     model_inputs["input_ids"][i] = [self.tokenizer.pad_token_id] * (self.max_length - len(sample_input_ids)) + sample_input_ids
-        #     model_inputs["attention_mask"][i] = [0] * (self.max_length - len(sample_input_ids)) + model_inputs["attention_mask"][i]
-        #     labels["input_ids"][i] = [-100] * (self.max_length - len(sample_input_ids)) + label_input_ids
-        #     model_inputs["input_ids"][i] = torch.tensor(model_inputs["input_ids"][i][:self.max_length])
-        #     model_inputs["attention_mask"][i] = torch.tensor(model_inputs["attention_mask"][i][:self.max_length]) 
-        #     labels["input_ids"][i] = torch.tensor(labels["input_ids"][i][:self.max_length])
+        for i in range(batch_size):
+            sample_input_ids = model_inputs["input_ids"][i]
+            label_input_ids = labels["input_ids"][i]
+            model_inputs["input_ids"][i] = [self.tokenizer.pad_token_id] * (self.max_length - len(sample_input_ids)) + sample_input_ids
+            model_inputs["attention_mask"][i] = [0] * (self.max_length - len(sample_input_ids)) + model_inputs["attention_mask"][i]
+            labels["input_ids"][i] = [-100] * (self.max_length - len(sample_input_ids)) + label_input_ids
+            model_inputs["input_ids"][i] = torch.tensor(model_inputs["input_ids"][i][:self.max_length])
+            model_inputs["attention_mask"][i] = torch.tensor(model_inputs["attention_mask"][i][:self.max_length]) 
+            labels["input_ids"][i] = torch.tensor(labels["input_ids"][i][:self.max_length])
 
-        # model_inputs["labels"] = labels["input_ids"]
-        # return model_inputs
-        return {
-            'prompt': [instruction_template + inp + response_template for inp in examples['input']],
-            'completion': [out for out in examples['output']]
-        }
+        model_inputs["labels"] = labels["input_ids"]
+        return model_inputs
+        # return {
+        #     'prompt': [instruction_template + inp + response_template for inp in examples['input']],
+        #     'completion': [out for out in examples['output']]
+        # }
 
     def preprocess_datasets(self):
         """
