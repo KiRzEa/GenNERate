@@ -68,7 +68,7 @@ class NERTrainingPipeline:
             # gradient_accumulation_steps=16,
             optim="adamw_torch",
             num_train_epochs=self.num_epochs,
-            logging_steps=128,
+            logging_steps=512,
             save_strategy="no",
             load_best_model_at_end=False,
             warmup_ratio = 0.1,
