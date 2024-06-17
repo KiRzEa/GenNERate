@@ -187,8 +187,8 @@ class NERTrainingPipeline:
             list: The list of predicted labels.
         """
         inputs = self.tokenizer([instruction_template + example + response_template for example in examples], return_tensors="pt", max_length=512, truncation=True, padding="max_length")
-        input_ids = inputs.input_ids.to(self.device).half()
-        attention_mask = inputs.attention_mask.to(self.device).half()
+        input_ids = inputs.input_ids.to(self.device)
+        attention_mask = inputs.attention_mask.to(self.device)
         
         outputs = self.trainer.model.generate(input_ids=input_ids, attention_mask=attention_mask, max_new_tokens=128, eos_token_id=self.tokenizer.eos_token_id)
         
