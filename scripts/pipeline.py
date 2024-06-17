@@ -176,7 +176,7 @@ class NERTrainingPipeline:
         stop_time = time.time()
         print("Training time (seconds): ", stop_time - start_time)
 
-    def get_prediction(self, example):
+    def get_prediction(self, examples):
         """
         Generate predictions for input examples.
 
@@ -186,7 +186,7 @@ class NERTrainingPipeline:
         Returns:
             list: The list of predicted labels.
         """
-        inputs = self.tokenizer(instruction_template + example + response_template, return_tensors="pt", max_length=512, truncation=True, padding="max_length")
+        inputs = self.tokenizer([instruction_template + example + response_template for example in examples], return_tensors="pt", max_length=512, truncation=True, padding="max_length")
         input_ids = inputs.input_ids.to(self.device).half()
         attention_mask = inputs.attention_mask.to(self.device).half()
         
