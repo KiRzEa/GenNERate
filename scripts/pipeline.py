@@ -2,10 +2,10 @@ import os
 import time
 import torch
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, default_data_collator, get_linear_schedule_with_warmup, TrainingArguments, GenerationConfig
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, TrainingArguments, GenerationConfig, BitsAndBytesConfig
 from peft import LoraConfig, get_peft_model, TaskType
-from accelerate import Accelerator
 from trl import SFTTrainer, DataCollatorForCompletionOnlyLM, setup_chat_format
+import bitsandbytes as bnb
 from tqdm import tqdm
 import pandas as pd
 
@@ -62,11 +62,15 @@ class NERTrainingPipeline:
             target_modules=self.get_target_modules()
         )
 
+        self.quant_config = BitsAndBytesConfig(
+            load_in_8bit=True
+        )
+        
         self.training_arguments = TrainingArguments(
             output_dir="checkpoint",
             per_device_train_batch_size=self.batch_size,
             # gradient_accumulation_steps=16,
-            optim="adamw_torch",
+            optim=bnb.optim.Adam8bit,
             num_train_epochs=self.num_epochs,
             logging_steps=512,
             save_strategy="no",
@@ -83,7 +87,7 @@ class NERTrainingPipeline:
         self.tokenizer.padding_side = "right"
         self.base_model = AutoModelForCausalLM.from_pretrained(self.model_name, 
                                                                 token='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',
-                                                                load_in_8bit=True,
+                                                                quantization_config=self.quant_config,
                                                                 device_map="auto")
 
         response_template_ids = self.tokenizer.encode(response_template, add_special_tokens=False)[1:]
