@@ -83,6 +83,7 @@ class NERTrainingPipeline:
         self.tokenizer.padding_side = "right"
         self.base_model = AutoModelForCausalLM.from_pretrained(self.model_name, 
                                                                 token='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',
+                                                                load_in_8bit=True,
                                                                 device_map="auto")
 
         response_template_ids = self.tokenizer.encode(response_template, add_special_tokens=False)[1:]
