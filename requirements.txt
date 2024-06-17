@@ -9,3 +9,4 @@ peft
 seqeval
 trl
 triton
+bitsandbytes
