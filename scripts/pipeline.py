@@ -61,9 +61,6 @@ class NERTrainingPipeline:
             target_modules=self.get_target_modules()
         )
 
-        self.quant_config = BitsAndBytesConfig(
-            load_in_8bit=True
-        )
         
         self.training_arguments = TrainingArguments(
             output_dir="checkpoint",
@@ -81,10 +78,21 @@ class NERTrainingPipeline:
             fp16=self.fp16,
             half_precision_backend="auto"
         )
+
+
+        self.quant_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=compute_dtype,
+            bnb_4bit_use_double_quant=False,
+        )
         
         self.dataset = self.create_dataset()
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, token='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')
-        self.base_model = AutoModelForCausalLM.from_pretrained(self.model_name, device_map="auto")
+        self.base_model = AutoModelForCausalLM.from_pretrained(self.model_name, 
+                                                                device_map="auto", 
+                                                                quantization_config=self.quant_config, 
+                                                                torch_dtype=torch.float16)
         self.model = get_peft_model(self.base_model, self.peft_config)
         self.collator = DataCollatorForLanguageModeling(tokenizer=self.tokenizer, mlm=False)
 
