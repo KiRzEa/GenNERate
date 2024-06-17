@@ -88,8 +88,9 @@ class NERTrainingPipeline:
         )
         
         self.dataset = self.create_dataset()
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, token='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')
-        self.base_model = AutoModelForCausalLM.from_pretrained(self.model_name, 
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, token='')
+        self.base_model = AutoModelForCausalLM.from_pretrained(self.model_name,
+                                                                token='', 
                                                                 device_map="auto", 
                                                                 quantization_config=self.quant_config, 
                                                                 torch_dtype=torch.float16)
