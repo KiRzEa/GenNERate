@@ -83,10 +83,7 @@ class NERTrainingPipeline:
         self.tokenizer.padding_side = "right"
         self.base_model = AutoModelForCausalLM.from_pretrained(self.model_name, 
                                                                 token='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',
-                                                                device_map="auto",
-                                                                use_cache=False,
-                                                                force_download=False)
-        self.model = get_peft_model(self.base_model, self.peft_config).to(self.device)
+                                                                device_map="auto")
 
         response_template_ids = self.tokenizer.encode(response_template, add_special_tokens=False)[1:]
         self.collator = DataCollatorForCompletionOnlyLM(response_template_ids, tokenizer=self.tokenizer)
@@ -98,13 +95,11 @@ class NERTrainingPipeline:
         print(self.processed_datasets)
 
         self.trainer = SFTTrainer(
-            model=self.model,
+            model=self.base_model,
             train_dataset=self.processed_datasets["train"],
             peft_config=self.peft_config,
             max_seq_length=self.max_length,
-            tokenizer=self.tokenizer,
             args=self.training_arguments,
-            packing=False,
             data_collator=self.collator,
             formatting_func=formatting_prompts_func
         )
