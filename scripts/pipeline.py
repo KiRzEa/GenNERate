@@ -69,7 +69,7 @@ class NERTrainingPipeline:
             output_dir="checkpoint",
             per_device_train_batch_size=self.batch_size,
             # gradient_accumulation_steps=16,
-            optim='adamw_8bit',
+            # optim='adamw_8bit',
             num_train_epochs=self.num_epochs,
             logging_steps=512,
             save_strategy="no",
@@ -87,8 +87,8 @@ class NERTrainingPipeline:
         self.tokenizer.padding_side = "right"
         self.base_model = AutoModelForCausalLM.from_pretrained(self.model_name, 
                                                                 token='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',
-                                                                quantization_config=self.quant_config,
-                                                                torch_dtype=torch.float16,
+                                                                # quantization_config=self.quant_config,
+                                                                # torch_dtype=torch.float16,
                                                                 device_map="auto")
 
         response_template_ids = self.tokenizer.encode(response_template, add_special_tokens=False)[1:]
