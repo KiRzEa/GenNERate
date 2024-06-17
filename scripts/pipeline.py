@@ -109,7 +109,7 @@ class NERTrainingPipeline:
             model=self.model,
             args=self.training_arguments,
             train_dataset=self.processed_datasets["train"],
-            data_collator=self.data_collator
+            data_collator=self.collator
         )
 
         self.print_trainable_parameters()
