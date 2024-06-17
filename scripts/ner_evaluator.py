@@ -80,7 +80,6 @@ class NEREvaluator:
         df (DataFrame): DataFrame containing the gold and predicted labels.
         output_file (str): File to write the results.
         """
-        df['golds'] = df['gold'].apply(self.convert_to_list)
         df['preds'] = df['pred'].apply(self.convert_to_list)
         df['pred_tags'] = df.apply(lambda x: self.convert_to_bio(x['words'], x['preds']), axis=1)
 
@@ -104,4 +103,4 @@ class NEREvaluator:
             f.write(f"Macro F1 Score: {macro_f1:.4f}\n")
             f.write('=' * 50)
 
-        df[['words', 'tags','pred_tags','golds','preds']].to_csv(f"{self.model_name.replace('/', '-')}_{level}.csv", index=False)
+        df[['words', 'tags','pred_tags', 'preds']].to_csv(f"{self.model_name.replace('/', '-')}_{level}.csv", index=False)
