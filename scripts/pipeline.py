@@ -88,7 +88,7 @@ class NERTrainingPipeline:
         response_template_ids = self.tokenizer.encode(response_template, add_special_tokens=False)[1:]
         self.collator = DataCollatorForCompletionOnlyLM(response_template_ids, tokenizer=self.tokenizer)
 
-        self.print_trainable_parameters()
+        
         self.max_length = self.get_max_lengths()
 
         self.processed_datasets = self.dataset.remove_columns([col for col in self.dataset['train'].column_names if col not in ['input', 'output']])
@@ -103,6 +103,8 @@ class NERTrainingPipeline:
             data_collator=self.collator,
             formatting_func=formatting_prompts_func
         )
+
+        self.print_trainable_parameters()
 
     def get_target_modules(self):
         if self.architectures == 'BloomForCausalLM':
@@ -140,7 +142,7 @@ class NERTrainingPipeline:
         """
         trainable_params = 0
         all_param = 0
-        for _, param in self.model.named_parameters():
+        for _, param in self.trainer.model.named_parameters():
             all_param += param.numel()
             if param.requires_grad:
                 trainable_params += param.numel()
