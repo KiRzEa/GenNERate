@@ -5,6 +5,7 @@ import warnings
 
 warnings.filterwarnings("ignore")
 os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "1"
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 
 
@@ -20,7 +21,6 @@ if __name__ == "__main__":
     parser.add_argument("--syllable", action='store_true')
     
     args = parser.parse_args()
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
     pipeline = NERTrainingPipeline(args)
     pipeline.train()

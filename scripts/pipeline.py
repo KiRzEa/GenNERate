@@ -265,7 +265,6 @@ class NERTrainingPipeline:
 
         start_time = time.time()
         self.trainer.train()
-
         stop_time = time.time()
         print("Training time (seconds): ", stop_time - start_time)
 
