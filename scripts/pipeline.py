@@ -99,7 +99,7 @@ class NERTrainingPipeline:
                                                                 token='', 
                                                                 device_map="auto")
         # self.model = get_peft_model(self.base_model, self.peft_config)
-        # self.collator = DataCollatorForLanguageModeling(tokenizer=self.tokenizer, mlm=False)
+        self.collator = DataCollatorForLanguageModeling(tokenizer=self.tokenizer, mlm=False)
 
         # response_template_ids = self.tokenizer.encode(response_template, add_special_tokens=False)[1:]
         # self.collator = DataCollatorForCompletionOnlyLM(response_template_ids, tokenizer=self.tokenizer)
@@ -115,7 +115,7 @@ class NERTrainingPipeline:
             peft_config=self.peft_config,
             max_seq_length=self.max_length,
             args=self.sft_config
-            # data_collator=self.collator,
+            data_collator=self.collator,
             # formatting_func=formatting_prompts_func
         )
         # self.trainer = Trainer(
