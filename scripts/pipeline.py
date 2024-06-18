@@ -114,7 +114,7 @@ class NERTrainingPipeline:
             train_dataset=self.processed_datasets["train"],
             peft_config=self.peft_config,
             max_seq_length=self.max_length,
-            args=self.sft_config
+            args=self.sft_config,
             data_collator=self.collator,
             # formatting_func=formatting_prompts_func
         )
